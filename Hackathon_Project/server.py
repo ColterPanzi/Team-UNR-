@@ -72,7 +72,7 @@ def chat():
 # ================
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html")
+    return render_template("menu.html")
 
 
 if __name__ == "__main__":

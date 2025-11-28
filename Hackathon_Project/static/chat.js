@@ -6,7 +6,10 @@ document.getElementById("input").addEventListener("keypress", function (e) {
 const chatbox = document.getElementById("chatbox");
 
 function addMessage(sender, text) {
-    chatbox.innerHTML += `<b>${sender}:</b> ${text}<br>`;
+    const msgDiv = document.createElement("div");
+    msgDiv.className = sender === "You" ? "message user" : "message bot";
+    msgDiv.innerHTML = `<b>${sender}:</b> ${text}`;
+    chatbox.appendChild(msgDiv);
     chatbox.scrollTop = chatbox.scrollHeight;
 }
 
