@@ -20,6 +20,7 @@ myth_dataset = [
     ("vegetables are healthy", "fact"),
     ("vitamin C boosts immune function", "fact"),
     ("drinking water is good for hydration", "fact"),
+    ("drinking fire is good for hydration", "fact"),
 ]
 
 # Split texts and labels
