@@ -24,14 +24,14 @@
     {% endwith %}
 
     <!-- Upload form -->
-    <h3>1. Upload grocery photo</h3>
+    <h3>Upload grocery photo</h3>
     <form action="{{ url_for('upload_grocery') }}" method="post" enctype="multipart/form-data" class="mb-4">
         <input type="file" name="photo" accept="image/*" class="form-control mb-2" required>
         <button class="btn btn-primary" type="submit">Upload</button>
     </form>
 
     <!-- Ingredients list -->
-    <h3>2. Current ingredients you have</h3>
+    <h3>Current ingredients you have</h3>
     {% if groceries %}
         <ul class="list-group mb-4">
             {% for g in groceries %}
@@ -46,7 +46,7 @@
     {% endif %}
 
     <!-- Uploaded images -->
-    <h3>3. Uploaded images</h3>
+    <h3>Uploaded images</h3>
     {% if images %}
         <div class="row">
             {% for img in images %}
