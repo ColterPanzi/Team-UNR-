@@ -11,8 +11,10 @@ import re
 import nltk 
 from nltk.tokenize import word_tokenize 
 from nltk.stem import WordNetLemmatizer 
-from nltk.corpus import stopwords 
-from nltk.sentiment import SentimentIntensityAnalyzer 
+from nltk.corpus import stopwords
+
+# Download stopwords ONCE (safe to leave here)
+nltk.download("stopwords")
 
 
 app = Flask(__name__)
@@ -83,17 +85,61 @@ def allowed_file(filename):
 # ================================
 # Simple dataset of common nutrition myths and facts
 myth_dataset = [
-    ("carbs make you fat", "myth"),
-    ("detox teas remove toxins", "myth"),
-    ("eating late at night causes weight gain", "myth"),
-    ("high protein diets damage kidneys", "myth"),
-    ("drinking lemon water detoxes the body", "myth"),
-    ("protein helps build muscle", "fact"),
-    ("vegetables are healthy", "fact"),
-    ("vitamin C boosts immune function", "fact"),
-    ("drinking water is good for hydration", "fact"),
-    ("drinking fire is good for hydration", "fact"),
+    ("fruit has too much sugar to be healthy", "myth"),
+    ("all carbs should be avoided", "myth"),
+    ("bread is bad for you", "myth"),
+    ("gluten-free diets help everyone lose weight", "myth"),
+    ("eating fat makes you fat", "myth"),
+    ("cholesterol in food causes high cholesterol", "myth"),
+    ("salt is always bad for you", "myth"),
+    ("organic food is always more nutritious", "myth"),
+    ("you must drink 8 cups of water exactly every day", "myth"),
+    ("starving yourself helps you lose weight fast", "myth"),
+    ("red meat is always bad for health", "myth"),
+    ("detox juices cleanse your body", "myth"),
+    ("all processed foods are harmful", "myth"),
+    ("eggs increase your risk of heart disease", "myth"),
+    ("cold water slows your digestion", "myth"),
+    ("only animal protein builds muscle", "myth"),
+    ("eating late at night automatically makes you gain weight", "myth"),
+    ("natural sugar is always healthier than added sugar", "myth"),
+    ("drinking coffee dehydrates you", "myth"),
+    ("you need supplements to get enough nutrients", "myth"),
+    ("eating spicy food causes ulcers", "myth"),
+    ("a detox diet resets your metabolism", "myth"),
+    ("cutting out all fat is healthy", "myth"),
+    ("carrots worsen eyesight", "myth"),
+    ("low-carb diets are the only way to lose weight", "myth"),
+    ("you must avoid rice to stay slim", "myth"),
+    ("eating meat daily is unhealthy for everyone", "myth"),
+    ("apple cider vinegar burns belly fat", "myth"),
+    ("celery juice cures diseases", "myth"),
+
+    ("greens are rich in vitamins", "fact"),
+    ("whole foods generally contain more nutrients", "fact"),
+    ("exercise combined with good nutrition improves results", "fact"),
+    ("brown rice and white rice have similar calories", "fact"),
+    ("frozen vegetables retain nutrients", "fact"),
+    ("water helps regulate body temperature", "fact"),
+    ("probiotics support gut health", "fact"),
+    ("eating enough protein helps prevent muscle loss", "fact"),
+    ("healthy snacks can support energy throughout the day", "fact"),
+    ("plant-based diets can be nutritionally complete", "fact"),
+    ("dark chocolate contains antioxidants", "fact"),
+    ("moderate coffee consumption can be healthy", "fact"),
+    ("nuts provide healthy fats", "fact"),
+    ("eggs are a good source of protein", "fact"),
+    ("carbs are the body's main energy source", "fact"),
+    ("vitamin D supports immune function", "fact"),
+    ("bananas provide potassium", "fact"),
+    ("water is essential for metabolic processes", "fact"),
+    ("walking improves cardiovascular health", "fact"),
+    ("strength training builds lean muscle", "fact"),
+    ("breakfast is optional depending on personal needs", "fact"),
+    ("nutrition needs vary from person to person", "fact"),
+    ("hydration supports cognitive function", "fact")
 ]
+
 
 # Split texts and labels
 texts = [x[0] for x in myth_dataset]
@@ -110,26 +156,95 @@ myth_model.fit(texts, labels)
 
 userInputHistory = []  # Stores user's inputs
 
+userInfomationDatabase = {
+    "age": None,
+    "height": None,
+    "weight": None,
+    "gender": None
+}
+
+# Check for user data
+def ensureCheckUserInformation():
+    if userInfomationDatabase["age"] is None:
+        return "Before we continue, may I know your age?"
+    if userInfomationDatabase["height"] is None:
+        return "Got it! What's your height in cm?"
+    if userInfomationDatabase["weight"] is None:
+        return "Thanks! What's your weight in kg?"
+    if userInfomationDatabase["gender"] is None:
+        return "Lastly, may I know your gender?"
+    return None  # everything collected
+
+def ExtractUserData(user_message):
+    # Age
+    if userInfomationDatabase["age"] is None:
+        if re.search(r"\b\d{1,2}\b", user_message):
+            userInfomationDatabase["age"] = int(re.findall(r"\d+", user_message)[0])
+            return "Age recorded! Please enter your height in cm (example: 170)."
+
+        return "Please enter a valid age (example: 20)."
+
+    # Height
+    if userInfomationDatabase["height"] is None:
+        if re.search(r"\b\d{2,3}\b", user_message):
+            userInfomationDatabase["height"] = int(re.findall(r"\d+", user_message)[0])
+            return "Height recorded! Please enter your weight in kg (example: 65)."
+        return "Please enter your height in cm (example: 170)."
+
+    # Weight
+    if userInfomationDatabase["weight"] is None:
+        if re.search(r"\b\d{2,3}\b", user_message):
+            userInfomationDatabase["weight"] = int(re.findall(r"\d+", user_message)[0])
+            return "Weight recorded! Please enter male / female."
+        return "Please enter your weight in kg (example: 65)."
+
+    # Gender
+    if userInfomationDatabase["gender"] is None:
+        if any(g in user_message.lower() for g in ["male", "female"]):
+            userInfomationDatabase["gender"] = user_message.lower()
+            return "Gender recorded!"
+        return "Please enter male / female."
+
+    return None  # nothing to record
+
 def simple_tokenize(text):
     # Lowercase all input
-    return re.findall(r"\b\w+\b", text.lower())
+    tokens = re.findall(r"\b\w+\b", text.lower())
+    # Filters and remove common stop words using nltk 
+    filtered = [t for t in tokens if t not in set(stopwords.words("english"))]
+
+    return filtered
+
+bot_started = False
 
 def chatbot_reply(user_message):
-
+    global bot_started
     userInputHistory.append(user_message)
     tokens = simple_tokenize(user_message)
+    # First-time welcome
+    if not bot_started:
+        bot_started = True
+        return "👋 Welcome to NutriBot! Let's start by collecting some basic info."
+
+    # Collect User Data
+    missing_question = ensureCheckUserInformation() 
+    if missing_question:
+        data_result = ExtractUserData(user_message)
+        if data_result:
+            return data_result
+        return missing_question
+
+    # Prediction 
     prediction = myth_model.predict([user_message])[0]  # "myth" or "fact"
 
-    # Tokenize
-    tokens = simple_tokenize(user_message)
+    # Debugging
+    print(userInfomationDatabase)
     print("Tokens:", tokens)
-
-    # Predict using your ML model
-    prediction = myth_model.predict([user_message])[0]
 
     # Greeting detection
     if any(greet in tokens for greet in ["hello", "hi", "hey"]):
         return "Hello! How can I help you today?"
+
     # Goodbye
     if any(bye in tokens for bye in ["bye", "goodbye", "end", "quit"]):
         return "Bye! Thank you for using the bot!"
@@ -138,7 +253,7 @@ def chatbot_reply(user_message):
     if prediction == "myth":
         return ("⚠️ That's a common myth! Here's the truth: "
                 "Not all carbs make you fat, and detox teas don't remove toxins.")
-    
+
     if prediction == "fact":
         return "✅ Correct! Good nutrition practice."
 
