@@ -222,12 +222,18 @@ def chatbot_reply(user_message):
     userInputHistory.append(user_message)
     tokens = simple_tokenize(user_message)
     # First-time welcome
+    # Check first missing user info
+    missing_question = ensureCheckUserInformation()
+
+    # First-time welcome
     if not bot_started:
         bot_started = True
-        return "👋 Welcome to NutriBot! Let's start by collecting some basic info."
+        if missing_question:
+            return f"👋 Welcome to NutriBot! {missing_question}"
+        else:
+            return "👋 Welcome to NutriBot!"
 
     # Collect User Data
-    missing_question = ensureCheckUserInformation() 
     if missing_question:
         data_result = ExtractUserData(user_message)
         if data_result:
