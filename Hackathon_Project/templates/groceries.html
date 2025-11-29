@@ -1,76 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Your Pantry</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<div class="container py-4">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="container py-4">
+      <a href="{{ url_for('menu') }}" class="btn btn-link mb-3"
+        >&larr; Back to NutriBot</a
+      >
 
-    <a href="{{ url_for('index') }}" class="btn btn-link mb-3">&larr; Back to NutriBot</a>
+      <h1 class="mb-3">Pantry</h1>
 
-    <h1 class="mb-3">Pantry</h1>
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages() %} {% if messages %}
+      <div class="alert alert-info">
+        {% for msg in messages %}
+        <div>{{ msg }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %}
 
-    <!-- Flash messages -->
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <div class="alert alert-info">
-            {% for msg in messages %}
-                <div>{{ msg }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
-    {% endwith %}
-
-    <!-- Upload form -->
-    <h3>Upload grocery photo</h3>
-    <form action="{{ url_for('upload_grocery') }}" method="post" enctype="multipart/form-data" class="mb-4">
-        <input type="file" name="photo" accept="image/*" class="form-control mb-2" required>
+      <!-- Upload form -->
+      <h3>Upload grocery photo</h3>
+      <form
+        action="{{ url_for('upload_grocery') }}"
+        method="post"
+        enctype="multipart/form-data"
+        class="mb-4"
+      >
+        <input
+          type="file"
+          name="photo"
+          accept="image/*"
+          class="form-control mb-2"
+          required
+        />
         <button class="btn btn-primary" type="submit">Upload</button>
-    </form>
+      </form>
 
-    <!-- Ingredients list -->
-    <h3>Current ingredients you have</h3>
-    {% if groceries %}
-        <ul class="list-group mb-4">
-            {% for g in groceries %}
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>{{ g["name"] }}</span>
-                    <small class="text-muted">{{ g["added_at"] }}</small>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No ingredients yet. Upload a photo first.</p>
-    {% endif %}
+      <!-- Ingredients list -->
+      <h3>Current ingredients you have</h3>
+      {% if groceries %}
+      <ul class="list-group mb-4">
+        {% for g in groceries %}
+        <li
+          class="list-group-item d-flex justify-content-between align-items-center"
+        >
+          <span>{{ g["name"] }}</span>
+          <div class="d-flex align-items-center">
+            <small class="text-muted me-2">{{ g["added_at"] }}</small>
+            <form
+              action="{{ url_for('delete_grocery', item_id=g.id) }}"
+              method="POST"
+              style="display: inline"
+            >
+              <button
+                class="btn btn-sm"
+                style="padding: 2px 6px"
+                onclick="return confirm('Delete this ingredient?');"
+              >
+                🗑️
+              </button>
+            </form>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>No ingredients yet. Upload a photo first.</p>
+      {% endif %}
 
-    <!-- Uploaded images -->
-    <h3>Uploaded images</h3>
-    {% if images %}
-        <div class="row">
-            {% for img in images %}
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <img src="/{{ img['image_path'] }}" class="card-img-top">
-                        <div class="card-body">
-                            <p class="card-text">
-                                Detected (mock): {{ ', '.join(img['detected_items']) }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
+      <!-- Uploaded images -->
+      <h3>Uploaded images</h3>
+      {% if images %}
+      <div class="row">
+        {% for img in images %}
+        <div class="col-md-4 mb-3">
+          <div class="card">
+            <img src="/{{ img['image_path'] }}" class="card-img-top" />
+            <div class="card-body">
+              <p class="card-text">
+                Detected (mock): {{ ', '.join(img['detected_items']) }}
+              </p>
+                <form action="{{ url_for('delete_image', image_id=img['id']) }}" method="POST" style="margin:0;">
+                <button class="btn btn-sm"
+                        onclick="return confirm('Delete this image and its ingredients?');">
+                    🗑️
+                </button>
+            </form>
+            </div>
+          </div>
         </div>
-    {% else %}
-        <p>No images uploaded yet.</p>
-    {% endif %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <p>No images uploaded yet.</p>
+      {% endif %}
 
-    <!-- Button to recipes -->
-    <a href="{{ url_for('recipes_page') }}" class="btn btn-success mt-3">
+      <!-- Button to recipes -->
+      <a href="{{ url_for('recipes_page') }}" class="btn btn-success mt-3">
         Generate Recipes
-    </a>
-
-</div>
-</body>
+      </a>
+    </div>
+  </body>
 </html>
