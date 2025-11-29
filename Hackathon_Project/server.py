@@ -7,6 +7,13 @@ import os
 import json
 from uuid import uuid4
 from datetime import datetime
+import re 
+import nltk 
+from nltk.tokenize import word_tokenize 
+from nltk.stem import WordNetLemmatizer 
+from nltk.corpus import stopwords 
+from nltk.sentiment import SentimentIntensityAnalyzer 
+
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"  # needed for flash messages
@@ -101,23 +108,39 @@ myth_model = Pipeline([
 # Train model
 myth_model.fit(texts, labels)
 
-def chatbot_reply(user_message):
-    prediction = myth_model.predict([user_message])[0]  # "myth" or "fact"
-    if "hello" in user_message.lower():
-        return "Hi! How can I help you?"
-    
-    if re.search(r"\b(hello|hi|hey)\b", user_message, re.I):
-        return "Hello there!"
+userInputHistory = []  # Stores user's inputs
 
-    if re.search(r"\bweather\b", user_message, re.I):
-        return "Do you want today's weather?"
-    
+def simple_tokenize(text):
+    # Lowercase all input
+    return re.findall(r"\b\w+\b", text.lower())
+
+def chatbot_reply(user_message):
+
+    userInputHistory.append(user_message)
+    tokens = simple_tokenize(user_message)
+    prediction = myth_model.predict([user_message])[0]  # "myth" or "fact"
+
+    # Tokenize
+    tokens = simple_tokenize(user_message)
+    print("Tokens:", tokens)
+
+    # Predict using your ML model
+    prediction = myth_model.predict([user_message])[0]
+
+    # Greeting detection
+    if any(greet in tokens for greet in ["hello", "hi", "hey"]):
+        return "Hello! How can I help you today?"
+    # Goodbye
+    if any(bye in tokens for bye in ["bye", "goodbye", "end", "quit"]):
+        return "Bye! Thank you for using the bot!"
+
+    # Myth/Facts
     if prediction == "myth":
-        return "⚠️ That sounds like a common nutrition myth! Here's the truth: " \
-               "Not all carbs make you fat, and detox teas don't remove toxins. " \
-               "Science-based nutrition is key!"
+        return ("⚠️ That's a common myth! Here's the truth: "
+                "Not all carbs make you fat, and detox teas don't remove toxins.")
+    
     if prediction == "fact":
-        return " That’s correct! Good nutrition practice."
+        return "✅ Correct! Good nutrition practice."
 
     return "Not sure what you mean."
 
