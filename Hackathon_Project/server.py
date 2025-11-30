@@ -264,11 +264,23 @@ def profile():
     db = load_db()
     user = get_user(db, user_name)
 
-    # If the user has no profile, create one
+    # Ensure profile exists
     if "profile" not in user:
         user["profile"] = {"age": None, "height": None, "weight": None, "gender": None}
 
     if request.method == "POST":
+        new_username = request.form['username'].strip()
+
+        # Update username in DB key if changed
+        if new_username != user_name:
+            if new_username in db["users"]:
+                flash("Username already taken.")
+                return redirect(url_for("profile"))
+            db["users"][new_username] = db["users"].pop(user_name)
+            user_name = new_username
+            session["user_name"] = new_username  # update session
+
+        # Update profile info
         user["profile"]["age"] = request.form.get("age")
         user["profile"]["height"] = request.form.get("height")
         user["profile"]["weight"] = request.form.get("weight")
@@ -278,7 +290,7 @@ def profile():
         flash("Profile updated successfully!")
         return redirect(url_for("menu"))
 
-    return render_template("profile.html", profile=user["profile"])
+    return render_template("profile.html", profile=user["profile"], user_name=user_name)
 
 
 # ================================

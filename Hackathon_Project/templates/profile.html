@@ -16,6 +16,10 @@
                     
                         <form method="POST" action="/profile">
                             <div class="mb-3">
+                                <label class="form-label">Username:</label>
+                                <input type="text" class="form-control" name="username" value="{{ user_name }}" required>
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">Age:</label>
                                 <input type="number" class="form-control" name="age" value="{{ profile.age or '' }}" min="10" max="120" required>
                             </div>
