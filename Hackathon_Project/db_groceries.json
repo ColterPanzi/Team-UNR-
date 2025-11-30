@@ -2,25 +2,27 @@
   "users": {
     "demo": {
       "password": "demo1",
-      "groceries": [
-        {
-          "id": "226f96f6-bbd0-4feb-8beb-2211ec9cdf0e",
-          "name": "banana",
-          "quantity": null,
-          "unit": null,
-          "added_at": "30/11 02:24"
-        }
-      ],
-      "images": [
-        {
-          "id": "69d03849-55d0-4db7-8d3b-e007a34b633e",
-          "image_path": "static/uploads/a27b56b4-46e8-43e5-88a3-5d9d7af6bfa8.jpeg",
-          "detected_items": [
-            "banana"
-          ],
-          "uploaded_at": "30/11 02:24"
-        }
-      ]
+      "profile": {
+        "age": 24,
+        "height": 170,
+        "weight": 50,
+        "gender": "male",
+        "completed": true
+      },
+      "groceries": [],
+      "images": []
+    },
+    "demo1": {
+      "password": "demo",
+      "profile": {
+        "age": null,
+        "height": null,
+        "weight": null,
+        "gender": null,
+        "completed": false
+      },
+      "groceries": [],
+      "images": []
     }
   }
 }
