@@ -216,6 +216,22 @@ Your response:"""
 
 bot_started = False
 
+def ensure_user_profile(user):
+    """Make sure user has the complete profile structure"""
+    if "profile" not in user:
+        user["profile"] = {}
+    
+    # Ensure all profile fields exist
+    profile_fields = ["age", "height", "weight", "gender", "completed", "email", "phone", "country"]
+    for field in profile_fields:
+        if field not in user["profile"]:
+            if field == "completed":
+                user["profile"][field] = False
+            else:
+                user["profile"][field] = None if field in ["age", "height", "weight"] else ""
+    
+    return user
+
 def chatbot_reply(user_message):
     # Use session to track if bot started for this user
     if 'bot_started' not in session:
