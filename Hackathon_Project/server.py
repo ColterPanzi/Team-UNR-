@@ -180,26 +180,32 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generate_gpt_reply(user_message):
-    tokens = simple_tokenize(user_message)
-    preprocessed_message = " ".join(tokens)
-    prompt = f"You are a friendly nutrition expert chatbot. Answer clearly and safely:\n{preprocessed_message}"
+    """Enhanced GPT prompt that stays on topic"""
+    prompt = f"""You are NutriBot, a friendly nutrition and health expert chatbot. 
 
+USER QUESTION: "{user_message}"
+
+IMPORTANT: Only answer if this question is related to nutrition, diet, food, health, fitness, or healthy living. 
+
+If the question is NOT related to these topics, politely decline and redirect back to nutrition/health topics.
+
+Otherwise, provide a helpful, evidence-based response about nutrition and health.
+
+Your response:"""
+    
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=150,
+            max_tokens=200,
             temperature=0.7
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         print("OpenAI API error:", e)
         return "Sorry, I couldn't generate a response at the moment."
-
-# =========================
-# Chatbot logic
-# =========================
 bot_started = False
+
 def chatbot_reply(user_message):
     global bot_started
     userInputHistory.append(user_message)
@@ -219,22 +225,16 @@ def chatbot_reply(user_message):
 
     # Greetings
     if any(greet in tokens for greet in ["hello", "hi", "hey"]):
-        return "Hello! How can I help you today?"
+        return "Hello! I'm NutriBot, your nutrition assistant! Ask me about food, diet, exercise, or healthy living. 🍎"
     
     # Goodbye
     if any(bye in tokens for bye in ["bye", "goodbye", "end", "quit"]):
-        return "Bye! Thank you for using the bot!"
+        return "Bye! Stay healthy! 🥦"
     
-    # REMOVE OR COMMENT OUT THIS BLOCK:
-    # # Explicit myth safety
-    # if is_myth(user_message):
-    #     return "⚠️ That's a common myth! Not all carbs make you fat, and detox teas don't remove toxins."
-    
-    # Fallback to GPT
+    # Fallback to GPT (which now has built-in topic filtering)
     return generate_gpt_reply(user_message)
-# =========================
-# Flask endpoints
-# =========================
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json
