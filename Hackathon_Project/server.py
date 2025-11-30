@@ -6,15 +6,14 @@ from uuid import uuid4
 from datetime import datetime
 import nltk
 from nltk.corpus import stopwords
-import openai
 from dotenv import load_dotenv
 from openai import OpenAI
 
 # =========================
 # Setup
 # =========================
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
+#openai.api_key = os.getenv("OPENAI_API_KEY")
 
 nltk.download("stopwords")
 
@@ -161,6 +160,8 @@ def simple_tokenize(text):
     return filtered
 
 # Initialize the client once
+load_dotenv()
+print("Loaded key:", os.getenv("OPENAI_API_KEY"))
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generate_gpt_reply(user_message):
