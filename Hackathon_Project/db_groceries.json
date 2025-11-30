@@ -21,6 +21,11 @@
           "uploaded_at": "30/11 02:24"
         }
       ]
+    },
+    "hihi": {
+      "password": "1234",
+      "groceries": [],
+      "images": []
     }
   }
 }

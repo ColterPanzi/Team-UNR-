@@ -24,14 +24,13 @@
     class="bg-light d-flex flex-column justify-content-center align-items-center vh-100"
   >
     <div
-      class="text-center bg-white p-5 rounded shadow"
-      style="max-width: 500px; width: 100%"
+      class="card p-4 shadow main-card"
     >
       <h1 class="mb-4">NutriBot</h1>
       <p class="lead mb-4">Your personal nutrition chatbot</p>
 
       <button
-        class="btn btn-primary btn-lg"
+        class="btn btn-primary btn-lg mb-4"
         id="startBtn"
         data-bs-toggle="collapse"
         data-bs-target="#chatPanel"
@@ -42,14 +41,14 @@
 
       <a
         href="{{ url_for('groceries_page') }}"
-        class="btn btn-outline-success btn-lg"
+        class="btn btn-outline-success btn-lg mb-4"
       >
         Pantry & Recipes
       </a>
 
       <a
         href="{{ url_for('logout') }}"
-        class="btn btn-outline-danger btn-lg mt-3"
+        class="btn btn-outline-danger btn-lg"
       >
         Logout
       </a>
@@ -75,12 +74,5 @@
         </div>
       </div>
     </div>
-
-    <footer class="mt-4 text-center pb-3">
-      <small
-        >UI powered by
-        <a href="https://getbootstrap.com/" target="_blank">Bootstrap</a></small
-      >
-    </footer>
   </body>
 </html>
