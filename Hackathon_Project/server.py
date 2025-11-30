@@ -225,13 +225,13 @@ def chatbot_reply(user_message):
     if any(bye in tokens for bye in ["bye", "goodbye", "end", "quit"]):
         return "Bye! Thank you for using the bot!"
     
-    # Explicit myth safety
-    if is_myth(user_message):
-        return "⚠️ That's a common myth! Not all carbs make you fat, and detox teas don't remove toxins."
+    # REMOVE OR COMMENT OUT THIS BLOCK:
+    # # Explicit myth safety
+    # if is_myth(user_message):
+    #     return "⚠️ That's a common myth! Not all carbs make you fat, and detox teas don't remove toxins."
     
     # Fallback to GPT
     return generate_gpt_reply(user_message)
-
 # =========================
 # Flask endpoints
 # =========================
