@@ -177,7 +177,7 @@ def is_myth(message):
 from openai import OpenAI
 
 # Initialize the client once
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+#client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generate_gpt_reply(user_message):
     """Enhanced GPT prompt that stays on topic"""
@@ -254,6 +254,31 @@ def menu():
         return redirect(url_for("login"))
 
     return render_template("menu.html", user_name=user_name)
+
+@app.route("/profile", methods=["GET", "POST"])
+def profile():
+    user_name = require_login()
+    if not user_name:
+        return redirect(url_for("login"))
+
+    db = load_db()
+    user = get_user(db, user_name)
+
+    # If the user has no profile, create one
+    if "profile" not in user:
+        user["profile"] = {"age": None, "height": None, "weight": None, "gender": None}
+
+    if request.method == "POST":
+        user["profile"]["age"] = request.form.get("age")
+        user["profile"]["height"] = request.form.get("height")
+        user["profile"]["weight"] = request.form.get("weight")
+        user["profile"]["gender"] = request.form.get("gender")
+
+        save_db(db)
+        flash("Profile updated successfully!")
+        return redirect(url_for("menu"))
+
+    return render_template("profile.html", profile=user["profile"])
 
 
 # ================================

@@ -25,3 +25,17 @@
     align-self: flex-end;
     background-color: #f1f0f0;
 }
+
+.profile-btn {
+position: fixed;
+top: 20px;
+right: 20px;
+z-index: 1000;
+border-radius: 50%;
+width: 45px;
+height: 45px;
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 1.2rem;
+}

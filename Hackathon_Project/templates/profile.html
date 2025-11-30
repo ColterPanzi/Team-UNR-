@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title mb-4 text-center">Update Your Profile</h2>
+                    
+                        <form method="POST" action="/profile">
+                            <div class="mb-3">
+                                <label class="form-label">Age:</label>
+                                <input type="number" class="form-control" name="age" value="{{ profile.age or '' }}" min="10" max="120" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Height (cm):</label>
+                                <input type="number" class="form-control" name="height" value="{{ profile.height or '' }}" min="50" max="250" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Weight (kg):</label>
+                                <input type="number" class="form-control" name="weight" value="{{ profile.weight or '' }}" min="20" max="300" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Gender:</label>
+                                <select name="gender" class="form-select" required>
+                                    <option value="">Select</option>
+                                    <option value="male" {% if profile.gender == 'male' %}selected{% endif %}>Male</option>
+                                    <option value="female" {% if profile.gender == 'female' %}selected{% endif %}>Female</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">Save Profile</button>
+                        </form>
+                    <a href="/menu" class="btn btn-link mt-3 d-block text-center">Back to Menu</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="mt-4 text-center pb-3">
+    <small>UI powered by
+        <a href="https://getbootstrap.com/" target="_blank">Bootstrap</a>
+    </small>
+</footer>
+
+</body>
+</html>
