@@ -5,6 +5,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 import os
 import json
+import base64
 from uuid import uuid4
 from datetime import datetime
 import nltk
@@ -57,12 +58,11 @@ def create_user(db, user_name, password):
         return False
 
     db["users"][user_name] = {
-        "password": password,  # plain text for hackathon only
+        "password": password,
         "groceries": [],
         "images": []
     }
     return True
-
 
 def require_login():
     user_name = session.get("user_name")
@@ -97,6 +97,72 @@ def add_grocery_items(user, ingredients):
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def detect_food_items(image_path: str):
+    try:
+        with open(image_path, "rb") as f:
+            img_bytes = f.read()
+
+        b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                "Look at this image and list the FOOD INGREDIENTS you see. "
+                                "Reply as a simple comma-separated list, e.g.: "
+                                "banana, milk, oats"
+                            ),
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{b64}"
+                            },
+                        },
+                    ],
+                }
+            ],
+            max_tokens=50,
+            temperature=0,
+        )
+
+        raw = response.choices[0].message.content.strip().lower()
+        raw = raw.replace(" and ", ", ")
+        parts = [p.strip() for p in raw.split(",")]
+        ingredients = [p for p in parts if p]
+
+        cleaned = [normalize_ingredient(i) for i in ingredients]
+        deduped = dedupe_keep_order(cleaned)
+        return deduped or ["unknown ingredient"]
+    except Exception as e:
+        print("Vision API error:", e)
+        return ["unknown ingredient"]
+
+def normalize_ingredient(name: str) -> str:
+    name = name.lower().strip()
+    parts = name.split()
+    core = parts[-1] if parts else name
+
+    if core.endswith("s") and not core.endswith("ss"):
+        core = core[:-1]
+        
+    return core
+
+def dedupe_keep_order(items):
+    seen = set()
+    result = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
 
 # =========================
 # User info collection
@@ -329,24 +395,26 @@ def delete_image(image_id):
 def upload_grocery():
     user_name = require_login()
     if not user_name:
-        return redirect(url_for("login"))
+        return jsonify({"error": "not_logged_in"}), 401
 
     if "photo" not in request.files:
-        flash("No file uploaded.")
-        return redirect(url_for("groceries_page"))
-    
+        return jsonify({"error": "no_file"}), 400
+
     file = request.files["photo"]
-    if file.filename == "" or not allowed_file(file.filename):
-        flash("File not allowed or empty.")
-        return redirect(url_for("groceries_page"))
-    
+    if file.filename == "":
+        return jsonify({"error": "empty_filename"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"error": "bad_type"}), 400
+
+    # Save image to static/uploads
     ext = file.filename.rsplit(".", 1)[1].lower()
     filename = f"{uuid4()}.{ext}"
     save_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(save_path)
 
-    # Temporary dummy ingredients (no AI yet)
-    ingredients = ["banana"]
+    # Use OpenAI Vision to detect one or more ingredients
+    ingredients = detect_food_items(save_path)
 
     db = load_db()
     user = get_user(db, user_name)
@@ -354,8 +422,8 @@ def upload_grocery():
     add_grocery_items(user, ingredients)
     save_db(db)
 
-    flash(f"Temporary ingredients saved for {user_name}: {', '.join(ingredients)} (no AI yet)")
-    return redirect(url_for("groceries_page"))
+    detected_str = ", ".join(ingredients)
+    return jsonify({"reply": f"Image uploaded to pantry. I detected: {detected_str}."})
 
 @app.route("/recipes", methods=["GET"])
 def recipes_page():

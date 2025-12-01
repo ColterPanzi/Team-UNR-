@@ -4,21 +4,44 @@
       "password": "demo1",
       "groceries": [
         {
-          "id": "226f96f6-bbd0-4feb-8beb-2211ec9cdf0e",
+          "id": "e98f4bf0-d3b0-4335-ab35-2dd46858c3df",
           "name": "banana",
           "quantity": null,
           "unit": null,
-          "added_at": "30/11 02:24"
+          "added_at": "01/12 21:45"
+        },
+        {
+          "id": "d50ccf63-ea9f-496d-80d9-8ad1a18a87ff",
+          "name": "apple",
+          "quantity": null,
+          "unit": null,
+          "added_at": "01/12 21:45"
+        },
+        {
+          "id": "5f54db3f-2c57-4d1a-8f28-11ee2fd71646",
+          "name": "banana",
+          "quantity": null,
+          "unit": null,
+          "added_at": "01/12 21:45"
         }
       ],
       "images": [
         {
-          "id": "69d03849-55d0-4db7-8d3b-e007a34b633e",
-          "image_path": "static/uploads/a27b56b4-46e8-43e5-88a3-5d9d7af6bfa8.jpeg",
+          "id": "eeb38c72-944c-4d8d-aac4-b274c79f5bcc",
+          "image_path": "static/uploads/ce60f7d8-b771-4f19-94c8-7a34a0a6a9b2.jpeg",
           "detected_items": [
             "banana"
           ],
-          "uploaded_at": "30/11 02:24"
+          "uploaded_at": "01/12 21:45"
+        },
+        {
+          "id": "1ae134ae-f56a-4900-9bf4-9837cd46e5be",
+          "image_path": "static/uploads/e0676acb-7eb2-49a0-b413-dc790be5e659.jpeg",
+          "detected_items": [
+            "apple",
+            "banana"
+          ],
+          "uploaded_at": "01/12 21:45"
         }
       ]
     },

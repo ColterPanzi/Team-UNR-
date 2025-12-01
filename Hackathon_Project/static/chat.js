@@ -1,32 +1,63 @@
 document.getElementById("send").addEventListener("click", sendMessage);
 document.getElementById("input").addEventListener("keypress", function (e) {
-    if (e.key === "Enter") sendMessage();
+  if (e.key === "Enter") sendMessage();
 });
 
 const chatbox = document.getElementById("chatbox");
+const inputEl = document.getElementById("input");
+const attachBtn = document.getElementById("attach");
+const imageInput = document.getElementById("imageInput");
 
 function addMessage(sender, text) {
-    const msgDiv = document.createElement("div");
-    msgDiv.className = sender === "You" ? "message user" : "message bot";
-    msgDiv.innerHTML = `<b>${sender}:</b> ${text}`;
-    chatbox.appendChild(msgDiv);
-    chatbox.scrollTop = chatbox.scrollHeight;
+  const msgDiv = document.createElement("div");
+  msgDiv.className = sender === "You" ? "message user" : "message bot";
+  msgDiv.innerHTML = `<b>${sender}:</b> ${text}`;
+  chatbox.appendChild(msgDiv);
+  chatbox.scrollTop = chatbox.scrollHeight;
 }
 
-async function sendMessage() {
-    const input = document.getElementById("input");
-    const message = input.value.trim();
-    if (!message) return;
+attachBtn.addEventListener("click", () => {
+  imageInput.click();
+});
 
-    addMessage("You", message);
-    input.value = "";
+imageInput.addEventListener("change", async () => {
+  if (!imageInput.files.length) return;
 
-    const res = await fetch("/chat", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({message})
+  const file = imageInput.files[0];
+  addMessage("You", "📎 Uploaded an image");
+
+  const formData = new FormData();
+  formData.append("photo", file);
+  try {
+    const res = await fetch("/upload_grocery", {
+      method: "POST",
+      body: formData,
     });
 
     const data = await res.json();
-    addMessage("Bot", data.reply);
+    const replyText = data.reply || "Image uploaded to pantry.";
+    addMessage("Bot", replyText);
+  } catch (err) {
+    console.error(err);
+    addMessage("Bot", "Sorry, there was a problem uploading the image.");
+  }
+  imageInput.value = "";
+});
+
+async function sendMessage() {
+  const input = document.getElementById("input");
+  const message = input.value.trim();
+  if (!message) return;
+
+  addMessage("You", message);
+  input.value = "";
+
+  const res = await fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  });
+
+  const data = await res.json();
+  addMessage("Bot", data.reply);
 }

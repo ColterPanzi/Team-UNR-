@@ -23,9 +23,7 @@
   <body
     class="bg-light d-flex flex-column justify-content-center align-items-center vh-100"
   >
-    <div
-      class="card p-4 shadow main-card"
-    >
+    <div class="card p-4 shadow main-card">
       <h1 class="mb-4">NutriBot</h1>
       <p class="lead mb-4">Your personal nutrition chatbot</p>
 
@@ -36,20 +34,17 @@
         data-bs-target="#chatPanel"
         aria-expanded="false"
       >
-        Start Chatbot
+        Chatbot
       </button>
 
       <a
         href="{{ url_for('groceries_page') }}"
         class="btn btn-outline-success btn-lg mb-4"
       >
-        Pantry & Recipes
+        Pantry
       </a>
 
-      <a
-        href="{{ url_for('logout') }}"
-        class="btn btn-outline-danger btn-lg"
-      >
+      <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-lg">
         Logout
       </a>
 
@@ -68,6 +63,13 @@
                 class="form-control"
                 placeholder="Type a message..."
               />
+              <input
+                type="file"
+                id="imageInput"
+                accept="image/*"
+                style="display: none"
+              />
+              <button id="attach" class="btn" type="button">📎</button>
               <button id="send" class="btn btn-success">Send</button>
             </div>
           </div>
