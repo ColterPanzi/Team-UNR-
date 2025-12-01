@@ -1,0 +1,38 @@
+{
+  "users": {
+    "a": {
+      "password": "a",
+      "profile": {
+        "age": 12,
+        "height": 180,
+        "weight": 90,
+        "gender": "male",
+        "completed": true,
+        "email": "",
+        "phone": "",
+        "country": "",
+        "bmi": 27.78,
+        "daily_calories": 1970.0
+      },
+      "groceries": [],
+      "images": []
+    },
+    "t": {
+      "password": "t",
+      "profile": {
+        "age": 12,
+        "height": 123,
+        "weight": 123,
+        "gender": "male",
+        "completed": true,
+        "email": "",
+        "phone": "",
+        "country": "",
+        "bmi": 81.3,
+        "daily_calories": 1943.75
+      },
+      "groceries": [],
+      "images": []
+    }
+  }
+}

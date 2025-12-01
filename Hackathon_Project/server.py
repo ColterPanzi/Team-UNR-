@@ -223,7 +223,7 @@ def ensure_user_profile(user):
         user["profile"] = {}
     
     # Ensure all profile fields exist
-    profile_fields = ["age", "height", "weight", "gender", "completed", "email", "phone", "country"]
+    profile_fields = ["age", "height", "weight", "gender", "completed", "email", "phone", "country", "bmi", "daily_calories"]
     for field in profile_fields:
         if field not in user["profile"]:
             if field == "completed":
@@ -265,6 +265,29 @@ def chatbot_reply(user_message):
     
     # Fallback to GPT
     return generate_gpt_reply(user_message)
+
+# Bmi Funtions
+def calculate_bmi(weight, height):
+    """Calculate BMI safely. Height in cm, weight in kg."""
+    try:
+        h_m = float(height) / 100  # convert to meters
+        bmi = float(weight) / (h_m * h_m)
+        return round(bmi, 2)
+    except:
+        return None
+    
+# Caclulate Daily calories function
+def calculate_daily_calories(weight, height, age, gender):
+    weight = float(weight)
+    height = float(height)
+    age = int(age)
+    gender = gender.lower()
+
+    if gender == "male":
+        return 10 * weight + 6.25 * height - 5 * age + 5
+    else:
+        return 10 * weight + 6.25 * height - 5 * age - 161
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -317,7 +340,13 @@ def profile_setup():
             user["profile"]["height"] = int(height)
             user["profile"]["weight"] = int(weight)
             user["profile"]["gender"] = gender
+            # Calculate BMI 
+            bmi_value = calculate_bmi(weight, height)
+            user["profile"]["bmi"] = bmi_value
             user["profile"]["completed"] = True
+            # Calculate daily calories 
+            daily_calories = calculate_daily_calories(weight, height, age, gender)
+            user["profile"]["daily_calories"] = daily_calories
             
             save_db(db)
             flash("Profile setup complete! Welcome to NutriBot! 🎉")
