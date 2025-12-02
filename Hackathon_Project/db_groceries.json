@@ -4,13 +4,6 @@
       "password": "demo1",
       "groceries": [
         {
-          "id": "e98f4bf0-d3b0-4335-ab35-2dd46858c3df",
-          "name": "banana",
-          "quantity": null,
-          "unit": null,
-          "added_at": "01/12 21:45"
-        },
-        {
           "id": "d50ccf63-ea9f-496d-80d9-8ad1a18a87ff",
           "name": "apple",
           "quantity": null,
@@ -26,14 +19,6 @@
         }
       ],
       "images": [
-        {
-          "id": "eeb38c72-944c-4d8d-aac4-b274c79f5bcc",
-          "image_path": "static/uploads/ce60f7d8-b771-4f19-94c8-7a34a0a6a9b2.jpeg",
-          "detected_items": [
-            "banana"
-          ],
-          "uploaded_at": "01/12 21:45"
-        },
         {
           "id": "1ae134ae-f56a-4900-9bf4-9837cd46e5be",
           "image_path": "static/uploads/e0676acb-7eb2-49a0-b413-dc790be5e659.jpeg",

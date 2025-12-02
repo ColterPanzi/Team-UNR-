@@ -164,6 +164,128 @@ def dedupe_keep_order(items):
             result.append(item)
     return result
 
+def extract_mentioned_ingredients(message, pantry_ingredients):
+    message = message.lower()
+    selected = [i for i in pantry_ingredients if i.lower() in message]
+    return selected
+
+def extract_recipe_count(message: str, default=3):
+    message = message.lower()
+    for num in [1,2,3,4,5]:
+        if f"{num} recipe" in message or f"{num} recipes" in message:
+            return num
+    return default
+
+def generate_recipes_for_user(user_message):
+    user_name = session.get("user_name")
+    if not user_name:
+        return "Please log in to request recipes."
+
+    db = load_db()
+    user = get_user(db, user_name)
+
+    pantry = sorted({item["name"] for item in user["groceries"]})
+
+    if not pantry:
+        return "Your pantry is empty. Upload a food image first."
+
+    requested = extract_mentioned_ingredients(user_message, pantry)
+
+    ingredients_to_use = requested if requested else pantry
+
+    if len(requested) > 0 and len(requested) == 1:
+        pass  # ok
+    elif len(requested) >= 2:
+        forbidden = [
+            ("apple", "cabbage"),
+            ("banana", "broccoli")
+        ]
+        for combo in forbidden:
+            if all(i in requested for i in combo):
+                return f"❌ No valid recipes can be formed using: {', '.join(requested)}."
+
+    count = extract_recipe_count(user_message, default=3)
+
+    prompt = f"""
+    You are NutriBot. ALWAYS follow the required format exactly. 
+    Every recipe MUST be separated clearly with blank lines. 
+    DO NOT merge any lines together. DO NOT output inline text blocks.
+
+    ==========================
+    FORMAT RULES (MANDATORY)
+    ==========================
+    For EACH recipe, output EXACTLY this structure with REQUIRED newlines:
+
+    TITLE: <recipe name>
+
+    Ingredients:
+    • ingredient — amount
+    • ingredient — amount
+
+    Steps:
+    1. step text (only add time if heat is used)
+    2. step text
+    3. step text
+
+    Nutrition (per serving):
+    • Calories: <number> kcal
+    • Protein: <number> g
+    • Carbs: <number> g
+    • Fat: <number> g
+
+    ---- END OF RECIPE ----
+
+    IMPORTANT:
+    • Ensure ALL sections appear on separate lines.
+    • Ensure bullets NEVER appear on the same line as a title.
+    • NEVER merge two recipes together.
+    • After each recipe, include EXACTLY the line: "---- END OF RECIPE ----"
+    • This STOP TOKEN forces clean separation.
+
+    ==========================
+    RECIPE GENERATION RULES
+    ==========================
+    1. Generate EXACTLY {count} recipes.
+    2. If the user requests dietary constraints (e.g., "high protein"):
+    → ALL recipes must follow it.
+    3. If the user specifies ingredients:
+    → ALL recipes must include those ingredients.
+    4. Use up to 3 pantry ingredients per recipe.
+    5. If ingredients cannot form valid recipes:
+    → Reply ONLY with this: "No valid recipes can be formed using the ingredients mentioned."
+    6. Do NOT use unrealistic combinations (e.g., apple + cabbage).
+    7. Include cook time ONLY for heat-based steps:
+    • baking, roasting, frying, sautéing
+    • boiling, simmering
+    • microwaving
+    • grilling, air frying
+
+    ==========================
+    PANTRY + REQUEST CONTEXT
+    ==========================
+    PANTRY INGREDIENTS: {", ".join(pantry)}
+    REQUESTED INGREDIENTS: {", ".join(requested) if requested else "None"}
+    USER MESSAGE: "{user_message}"
+
+    Now output {count} recipes in the strict format.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=600,
+            temperature=0.7
+        )
+
+        raw = response.choices[0].message.content.strip()
+        return raw
+    except Exception as e:
+        print("Recipe generation error:", e)
+        return "Sorry, I couldn't generate recipes at this moment."
+
+
+
 # =========================
 # User info collection
 # =========================
@@ -297,6 +419,10 @@ def chatbot_reply(user_message):
     if any(bye in tokens for bye in ["bye", "goodbye", "end", "quit"]):
         return "Bye! Stay healthy! 🥦"
     
+    # Recipe request detected
+    if "recipe" in user_message.lower():
+        return generate_recipes_for_user(user_message)
+    
     # Fallback to GPT (which now has built-in topic filtering)
     return generate_gpt_reply(user_message)
 
@@ -425,35 +551,6 @@ def upload_grocery():
     detected_str = ", ".join(ingredients)
     return jsonify({"reply": f"Image uploaded to pantry. I detected: {detected_str}."})
 
-@app.route("/recipes", methods=["GET"])
-def recipes_page():
-    user_name = require_login()
-    if not user_name:
-        return redirect(url_for("login"))
-
-    db = load_db()
-    user = get_user(db, user_name)
-    ingredients = sorted({item["name"] for item in user["groceries"]})
-    recipes_text = "No ingredients found yet." if not ingredients else \
-        "Future AI recipes using these ingredients:\n" + ", ".join(ingredients)
-    return render_template("recipes.html", ingredients=ingredients, recipes_text=recipes_text)
-
-    if ingredients:
-        recipes_text = (
-            f"In the future, this page will show AI-generated recipes for {user_name} "
-            f"using these ingredients:\n\n"
-            + ", ".join(ingredients)
-        )
-    else:
-        recipes_text = "No ingredients found yet. Please upload a grocery photo first."
-
-    return render_template(
-        "recipes.html",
-        ingredients=ingredients,
-        recipes_text=recipes_text,
-        user_name=user_name
-    )
-    
     
 # ================================
 # AUTH HELPERS 
