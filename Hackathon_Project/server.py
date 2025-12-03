@@ -229,7 +229,7 @@ def ensure_user_profile(user):
     return user
 
 bot_started = False
-
+# Chatbot Responses
 def chatbot_reply(user_message):
     print(f"\n=== CHATBOT DEBUG ===")
     print(f"Message: '{user_message}'")
@@ -370,7 +370,7 @@ def chatbot_reply(user_message):
     except Exception as e:
         print(f"GPT Error: {e}")
         return "I can help with nutrition advice! Try asking about food, diet, or healthy living."
-    
+# Calculate User Bmi    
 def calculate_bmi(weight, height):
     """Calculate BMI safely. Height in cm, weight in kg."""
     try:
@@ -380,7 +380,7 @@ def calculate_bmi(weight, height):
     except:
         return None
     
-# Caclulate Daily calories function
+# Calculate User Daily calories 
 def calculate_daily_calories(weight, height, age, gender):
     weight = float(weight)
     height = float(height)
@@ -640,7 +640,6 @@ def delete_image(image_id):
     flash("Image removed.")
     return redirect(url_for("groceries_page"))
 
-
 @app.route("/upload_grocery", methods=["POST"])
 def upload_grocery():
     user_name = require_login()
@@ -676,9 +675,8 @@ def upload_grocery():
     return jsonify({"reply": f"Image uploaded to pantry. I detected: {detected_str}."})
 
     
-# ================================
-# AUTH HELPERS 
-# ================================
+
+# User Sign up
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -701,7 +699,7 @@ def signup():
         return redirect(url_for("profile_setup"))
 
     return render_template("signup.html")
-
+# User Login 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -721,7 +719,7 @@ def login():
 
     return render_template("login.html")
 
-
+# Log out user
 @app.route("/logout")
 def logout():
     session.pop("user_name", None)
@@ -729,14 +727,10 @@ def logout():
     return redirect(url_for("index"))
 
 
-# ================
-# LOAD MAIN PAGE
-# ================
+# Load Main Nutribot page
 @app.route("/", methods=["GET"])
 def index():
     return render_template("login.html")
-
-# Add these routes to server.py
 
 @app.route("/weight-journey", methods=["GET"])
 def weight_journey():
