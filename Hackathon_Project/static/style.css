@@ -18,12 +18,12 @@
   white-space: pre-line;
 }
 .message.user {
-  align-self: flex-start;
+  align-self: flex-end;
   background-color: #dcf8c6;
 }
 
 .message.bot {
-  align-self: flex-end;
+  align-self: flex-start;
   background-color: #f1f0f0;
   padding: 10px;
   border-radius: 10px;
@@ -35,5 +35,38 @@
 @media (min-width: 600px) {
   body {
     padding: 3rem;
+  }
+}
+
+/* Typing indicator */
+.typing-indicator {
+  font-style: italic;
+  color: #777;
+}
+
+.typing-dots span {
+  display: inline-block;
+  width: 4px;
+  margin-left: 1px;
+  animation: typingBlink 1s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBlink {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }

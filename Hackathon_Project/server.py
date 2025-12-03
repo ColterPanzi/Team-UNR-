@@ -364,9 +364,11 @@ def generate_gpt_reply(user_message):
     if user_name:
         db = load_db()
         user = get_user(db, user_name)
-        if user and user["profile"]["completed"]:
-            user_profile = user["profile"]
-    
+        if user:
+            user = ensure_user_profile(user)
+            save_db(db)
+            if user["profile"]["completed"]:
+                user_profile = user["profile"]
     # Build prompt with user data
     if user_profile:
         profile_info = f"""
@@ -428,6 +430,7 @@ def ensure_user_profile(user):
                 user["profile"][field] = ""
     
     return user
+
 def chatbot_reply(user_message):
     # Use session to track if bot started for this user
     if 'bot_started' not in session:
@@ -440,8 +443,11 @@ def chatbot_reply(user_message):
     if user_name:
         db = load_db()
         user = get_user(db, user_name)
-        if user and not user["profile"]["completed"]:
-            return "Please complete your profile setup first from the main menu! 🎯"
+        if user:
+            user = ensure_user_profile(user)
+            save_db(db)
+            if not user["profile"]["completed"]:
+                return "Please complete your profile setup first from the main menu! 🎯"
     
     # Welcome (only show if profile is complete and first message)
     if not session['bot_started']:
@@ -457,6 +463,9 @@ def chatbot_reply(user_message):
     # Goodbye
     if any(bye in tokens for bye in ["bye", "goodbye", "end", "quit"]):
         return "Bye! Stay healthy! 🥦"
+    
+    if any(word in tokens for word in ["recipe", "recipes", "cook", "dish", "meal"]):
+        return generate_recipes_for_user(user_message)
     
     # Fallback to GPT
     return generate_gpt_reply(user_message)
@@ -579,6 +588,11 @@ def profile_setup():
     
     db = load_db()
     user = get_user(db, user_name)
+    if not user:
+        flash("User not found. Please log in again.")
+        return redirect(url_for("login"))
+
+    user = ensure_user_profile(user)
     
     if request.method == "POST":
         # Get form data
@@ -637,10 +651,17 @@ def menu():
         flash("Please log in first.")
         return redirect(url_for("login"))
 
-    # Check if profile is complete
     db = load_db()
     user = get_user(db, user_name)
-    if user and not user["profile"]["completed"]:
+    if not user:
+        flash("User not found. Please log in again.")
+        return redirect(url_for("login"))
+
+    # Ensure profile structure exists
+    user = ensure_user_profile(user)
+    save_db(db)  # persist the fixed structure
+
+    if not user["profile"]["completed"]:
         return redirect(url_for("profile_setup"))
 
     return render_template("menu.html", user_name=user_name)

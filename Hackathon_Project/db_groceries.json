@@ -16,6 +16,13 @@
           "quantity": null,
           "unit": null,
           "added_at": "01/12 21:45"
+        },
+        {
+          "id": "9051dfc7-57f1-4a13-827d-ec4fffc7d9d4",
+          "name": "orange",
+          "quantity": null,
+          "unit": null,
+          "added_at": "03/12 19:46"
         }
       ],
       "images": [
@@ -27,8 +34,29 @@
             "banana"
           ],
           "uploaded_at": "01/12 21:45"
+        },
+        {
+          "id": "4c94598b-56bc-477b-99d7-cd00a332ade2",
+          "image_path": "static/uploads/e6f54f8a-9470-4fdc-b74f-17a6b1882c86.jpeg",
+          "detected_items": [
+            "orange"
+          ],
+          "uploaded_at": "03/12 19:46"
         }
-      ]
+      ],
+      "profile": {
+        "age": 23,
+        "height": 176,
+        "weight": 60,
+        "gender": "male",
+        "completed": true,
+        "email": "",
+        "phone": "",
+        "country": "",
+        "bmi": 19.37,
+        "bmi_category": "Normal",
+        "daily_calories": 1590.0
+      }
     },
     "hihi": {
       "password": "1234",
