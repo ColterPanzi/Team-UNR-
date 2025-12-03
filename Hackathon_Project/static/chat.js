@@ -1,4 +1,11 @@
 document.getElementById("send").addEventListener("click", sendMessage);
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('startBtn').addEventListener('click', function() {
+        setTimeout(() => {
+            addMessage("Bot", "👋 Welcome to NutriBot! I can see your profile is set up. Ask me anything about nutrition, diet, or healthy living! 🍎");
+        }, 500);
+    });
+});
 document.getElementById("input").addEventListener("keypress", function (e) {
     if (e.key === "Enter") sendMessage();
 });

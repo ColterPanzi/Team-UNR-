@@ -1,23 +1,19 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
 import re
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import Pipeline
 import os
 import json
 from uuid import uuid4
 from datetime import datetime
 import nltk
 from nltk.corpus import stopwords
-import openai
 from dotenv import load_dotenv
 from openai import OpenAI
 
 # =========================
 # Setup
 # =========================
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
+#openai.api_key = os.getenv("OPENAI_API_KEY")
 
 nltk.download("stopwords")
 
@@ -57,13 +53,22 @@ def create_user(db, user_name, password):
         return False
 
     db["users"][user_name] = {
-        "password": password,  # plain text for hackathon only
+        "password": password,
+        "profile": {
+            "age": None,
+            "height": None, 
+            "weight": None,
+            "gender": None,
+            "completed": False,
+            # Add new optional fields
+            "email": "",
+            "phone": "",
+            "country": ""
+        },
         "groceries": [],
         "images": []
     }
     return True
-
-
 def require_login():
     user_name = session.get("user_name")
     if not user_name:
@@ -154,42 +159,46 @@ def simple_tokenize(text):
     filtered = [t for t in tokens if t not in set(stopwords.words("english"))]
     return filtered
 
-# =========================
-# Explicit myths for safety
-# =========================
-MYTH_PATTERNS = [
-    "starve myself",
-    "detox juice cleanse",
-    "all carbs should be avoided",
-    "drinking coffee dehydrates",
-]
-
-def is_myth(message):
-    msg = message.lower()
-    for pattern in MYTH_PATTERNS:
-        if pattern in msg:
-            return True
-    return False
-
-# =========================
-# GPT integration
-# =========================
-from openai import OpenAI
-
 # Initialize the client once
+load_dotenv()
+print("Loaded key:", os.getenv("OPENAI_API_KEY"))
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generate_gpt_reply(user_message):
-    """Enhanced GPT prompt that stays on topic"""
-    prompt = f"""You are NutriBot, a friendly nutrition and health expert chatbot. 
+    """Enhanced GPT prompt with user profile data"""
+    
+    # Get user profile data
+    user_profile = None
+    user_name = session.get("user_name")
+    if user_name:
+        db = load_db()
+        user = get_user(db, user_name)
+        if user and user["profile"]["completed"]:
+            user_profile = user["profile"]
+    
+    # Build prompt with user data
+    if user_profile:
+        profile_info = f"""
+USER PROFILE:
+- Age: {user_profile['age']}
+- Height: {user_profile['height']} cm
+- Weight: {user_profile['weight']} kg  
+- Gender: {user_profile['gender']}
+"""
+    else:
+        profile_info = "USER PROFILE: No profile data available."
+    
+    prompt = f"""You are NutriBot, a friendly nutrition and health expert chatbot.
+
+{profile_info}
 
 USER QUESTION: "{user_message}"
 
-IMPORTANT: Only answer if this question is related to nutrition, diet, food, health, fitness, or healthy living. 
-
-If the question is NOT related to these topics, politely decline and redirect back to nutrition/health topics.
-
-Otherwise, provide a helpful, evidence-based response about nutrition and health.
+IMPORTANT: 
+- Only answer if this question is related to nutrition, diet, food, health, fitness, or healthy living
+- If user profile is available, use it to provide personalized advice
+- If the question is NOT related to these topics, politely decline and redirect back to nutrition/health topics
+- Otherwise, provide a helpful, evidence-based response about nutrition and health
 
 Your response:"""
     
@@ -204,23 +213,46 @@ Your response:"""
     except Exception as e:
         print("OpenAI API error:", e)
         return "Sorry, I couldn't generate a response at the moment."
+    
+
 bot_started = False
 
+def ensure_user_profile(user):
+    """Make sure user has the complete profile structure"""
+    if "profile" not in user:
+        user["profile"] = {}
+    
+    # Ensure all profile fields exist
+    profile_fields = ["age", "height", "weight", "gender", "completed", "email", "phone", "country", "bmi", "daily_calories"]
+    for field in profile_fields:
+        if field not in user["profile"]:
+            if field == "completed":
+                user["profile"][field] = False
+            else:
+                user["profile"][field] = None if field in ["age", "height", "weight"] else ""
+    
+    return user
+
 def chatbot_reply(user_message):
-    global bot_started
+    # Use session to track if bot started for this user
+    if 'bot_started' not in session:
+        session['bot_started'] = False
+    
     userInputHistory.append(user_message)
     
-    # Welcome
-    missing_question = ensureCheckUserInformation()
-    if not bot_started:
-        bot_started = True
-        return f"👋 Welcome to NutriBot! {missing_question}" if missing_question else "👋 Welcome to NutriBot!"
+    # Check if user has completed profile
+    user_name = session.get("user_name")
+    if user_name:
+        db = load_db()
+        user = get_user(db, user_name)
+        if user and not user["profile"]["completed"]:
+            return "Please complete your profile setup first from the main menu! 🎯"
     
-    # Collect missing info
-    if missing_question:
-        data_result = ExtractUserData(user_message)
-        return data_result if data_result else missing_question
-
+    # Welcome (only show if profile is complete and first message)
+    if not session['bot_started']:
+        session['bot_started'] = True
+        return "👋 Welcome to NutriBot! I can see your profile is set up. Ask me anything about nutrition, diet, or healthy living! 🍎"
+    
     tokens = simple_tokenize(user_message)
 
     # Greetings
@@ -231,8 +263,30 @@ def chatbot_reply(user_message):
     if any(bye in tokens for bye in ["bye", "goodbye", "end", "quit"]):
         return "Bye! Stay healthy! 🥦"
     
-    # Fallback to GPT (which now has built-in topic filtering)
+    # Fallback to GPT
     return generate_gpt_reply(user_message)
+
+# Bmi Funtions
+def calculate_bmi(weight, height):
+    """Calculate BMI safely. Height in cm, weight in kg."""
+    try:
+        h_m = float(height) / 100  # convert to meters
+        bmi = float(weight) / (h_m * h_m)
+        return round(bmi, 2)
+    except:
+        return None
+    
+# Caclulate Daily calories function
+def calculate_daily_calories(weight, height, age, gender):
+    weight = float(weight)
+    height = float(height)
+    age = int(age)
+    gender = gender.lower()
+
+    if gender == "male":
+        return 10 * weight + 6.25 * height - 5 * age + 5
+    else:
+        return 10 * weight + 6.25 * height - 5 * age - 161
 
 
 @app.route("/chat", methods=["POST"])
@@ -242,10 +296,71 @@ def chat():
     reply = chatbot_reply(message)
     return jsonify({"reply": reply})
 
+@app.route("/profile", methods=["GET", "POST"])
+def profile():
+    user_name = require_login()
+    if not user_name:
+        return redirect(url_for("login"))
 
-# ================================
-# MENU PAGE
-# ================================
+    db = load_db()
+    user = get_user(db, user_name)
+    user = ensure_user_profile(user)  # Add this line
+    
+    if request.method == "POST":
+        # Update profile information
+        user["profile"]["email"] = request.form.get("email", "")
+        user["profile"]["phone"] = request.form.get("phone", "")
+        user["profile"]["country"] = request.form.get("country", "")
+        
+        save_db(db)
+        flash("Profile updated successfully! ✅")
+        return redirect(url_for("profile"))
+    
+    return render_template("profile.html", user=user, user_name=user_name)
+
+@app.route("/profile-setup", methods=["GET", "POST"])
+def profile_setup():
+    user_name = require_login()
+    if not user_name:
+        return redirect(url_for("login"))
+    
+    db = load_db()
+    user = get_user(db, user_name)
+    
+    if request.method == "POST":
+        # Get form data
+        age = request.form.get("age")
+        height = request.form.get("height") 
+        weight = request.form.get("weight")
+        gender = request.form.get("gender")
+        
+        # Validate and save
+        if age and height and weight and gender:
+            user["profile"]["age"] = int(age)
+            user["profile"]["height"] = int(height)
+            user["profile"]["weight"] = int(weight)
+            user["profile"]["gender"] = gender
+            # Calculate BMI 
+            bmi_value = calculate_bmi(weight, height)
+            user["profile"]["bmi"] = bmi_value
+            user["profile"]["completed"] = True
+            # Calculate daily calories 
+            daily_calories = calculate_daily_calories(weight, height, age, gender)
+            user["profile"]["daily_calories"] = daily_calories
+            
+            save_db(db)
+            flash("Profile setup complete! Welcome to NutriBot! 🎉")
+            return redirect(url_for("menu"))
+        else:
+            flash("Please fill in all fields.")
+    
+    # Check if profile already completed
+    if user["profile"]["completed"]:
+        flash("Your profile is already set up!")
+        return redirect(url_for("menu"))
+    
+    return render_template("profile_setup.html", user_name=user_name)
+
 @app.route("/menu", methods=["GET"])
 def menu():
     user_name = session.get("user_name")
@@ -253,8 +368,13 @@ def menu():
         flash("Please log in first.")
         return redirect(url_for("login"))
 
-    return render_template("menu.html", user_name=user_name)
+    # Check if profile is complete
+    db = load_db()
+    user = get_user(db, user_name)
+    if user and not user["profile"]["completed"]:
+        return redirect(url_for("profile_setup"))
 
+    return render_template("menu.html", user_name=user_name)
 
 # ================================
 # GROCERIES
@@ -407,11 +527,11 @@ def signup():
             return redirect(url_for("signup"))
 
         save_db(db)
-        flash("Account created! Please log in.")
-        return redirect(url_for("login"))
+        session["user_name"] = user_name  # Log them in
+        flash("Account created! Please complete your profile.")
+        return redirect(url_for("profile_setup"))
 
     return render_template("signup.html")
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
