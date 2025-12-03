@@ -812,7 +812,8 @@ def weight_journey():
                          milestones=user.get("milestones", []),
                          chat_response=session.pop('weight_chat_response', None),
                          user=user,
-                         goal=goal)  # Pass goal to template
+                         goal=goal,
+                         abs=abs)  # Pass goal to template
     
 @app.route("/log-weight", methods=["POST"])
 def log_weight():

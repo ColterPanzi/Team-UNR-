@@ -1,0 +1,78 @@
+{
+  "users": {
+    "demo": {
+      "password": "demo1",
+      "profile": {
+        "age": 23,
+        "height": 180,
+        "weight": 64.1,
+        "gender": "male",
+        "completed": true,
+        "email": "",
+        "phone": "",
+        "country": "",
+        "bmi": 19.78,
+        "bmi_category": "Normal",
+        "daily_calories": 1665.0,
+        "current_weight": 64.1,
+        "target_weight": 60.0,
+        "goal": "lose"
+      },
+      "groceries": [],
+      "images": [],
+      "weight_history": [
+        {
+          "id": "61b5c12b-e979-4112-85a0-31ddb25fef50",
+          "date": "03/12 21:51",
+          "weight": 64.8,
+          "notes": "",
+          "bmi": 20.0
+        },
+        {
+          "id": "cf7d5200-703e-4fa3-a9ef-f295acd5d468",
+          "date": "03/12 21:52",
+          "weight": 64.5,
+          "notes": "",
+          "bmi": 19.91
+        },
+        {
+          "id": "e3442936-73d7-4775-8025-4811cd57ffba",
+          "date": "03/12 21:52",
+          "weight": 64.7,
+          "notes": "",
+          "bmi": 19.97
+        },
+        {
+          "id": "5c9669cb-f050-4684-ac2e-d3378c62fe8a",
+          "date": "03/12 21:52",
+          "weight": 64.0,
+          "notes": "",
+          "bmi": 19.75
+        },
+        {
+          "id": "41c9b20f-9635-4e1f-8a0e-239376a21b33",
+          "date": "03/12 21:52",
+          "weight": 64.1,
+          "notes": "",
+          "bmi": 19.78
+        }
+      ],
+      "goals": {
+        "active_goal": null,
+        "goal_start_date": null,
+        "target_date": null,
+        "weekly_target": null
+      },
+      "milestones": [
+        {
+          "id": "first_log",
+          "title": "First Step",
+          "description": "Logged your first weight",
+          "icon": "flag",
+          "date": "03/12 21:51"
+        }
+      ],
+      "chat_history": []
+    }
+  }
+}
