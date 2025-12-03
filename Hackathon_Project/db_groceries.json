@@ -1,5 +1,6 @@
 {
   "users": {
+<<<<<<< Updated upstream
     "demo": {
       "password": "demo1",
       "groceries": [
@@ -32,6 +33,10 @@
     },
     "hihi": {
       "password": "1234",
+=======
+    "a": {
+      "password": "a",
+>>>>>>> Stashed changes
       "groceries": [],
       "images": []
     }
