@@ -1,3 +1,4 @@
+import random
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
 import re
 import os
@@ -19,6 +20,7 @@ nltk.download("stopwords")
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
+
 
 # =========================
 # JSON DB config
@@ -55,19 +57,36 @@ def create_user(db, user_name, password):
     db["users"][user_name] = {
         "password": password,
         "profile": {
+            # Essential profile fields
             "age": None,
             "height": None, 
             "weight": None,
             "gender": None,
-            "completed": False,
+            "completed": False,  # MUST HAVE THIS!
             "email": "",
             "phone": "",
             "country": "",
-            "bmi": None,  # Add this line
-            "bmi_category": None  # Add this line (optional)
+            "bmi": None,
+            "bmi_category": None,
+            "daily_calories": None,
+            
+            # New weight tracking fields
+            "current_weight": None,
+            "target_weight": None,   
+            "goal": None,            # "lose", "maintain", or "gain"
         },
         "groceries": [],
-        "images": []
+        "images": [],
+        # NEW: Weight Journey Tracking
+        "weight_history": [],  # Array of weight entries
+        "goals": {
+            "active_goal": None,
+            "goal_start_date": None,
+            "target_date": None,
+            "weekly_target": None  # kg per week
+        },
+        "milestones": [],  # Achievements unlocked
+        "chat_history": []  # Store motivational conversations
     }
     return True
 
@@ -169,6 +188,10 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def generate_gpt_reply(user_message):
     """Enhanced GPT prompt with user profile data"""
     
+    print(f"\n=== GPT FUNCTION DEBUG ===")
+    print(f"Input: '{user_message}'")
+    print(f"Session user_name: {session.get('user_name')}")
+    
     # Get user profile data
     user_profile = None
     user_name = session.get("user_name")
@@ -177,6 +200,11 @@ def generate_gpt_reply(user_message):
         user = get_user(db, user_name)
         if user and user["profile"]["completed"]:
             user_profile = user["profile"]
+            print(f"User profile found: {user_profile}")
+        else:
+            print("User profile not found or not completed")
+    else:
+        print("No user_name in session")
     
     # Build prompt with user data
     if user_profile:
@@ -189,6 +217,7 @@ USER PROFILE:
 """
     else:
         profile_info = "USER PROFILE: No profile data available."
+        print("Using default profile info")
     
     prompt = f"""You are NutriBot, a friendly nutrition and health expert chatbot.
 
@@ -204,20 +233,24 @@ IMPORTANT:
 
 Your response:"""
     
+    print(f"Prompt length: {len(prompt)} characters")
+    
     try:
+        print("Calling OpenAI API...")
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200,
             temperature=0.7
         )
-        return response.choices[0].message.content.strip()
+        result = response.choices[0].message.content.strip()
+        print(f"OpenAI API success! Response: '{result}'")
+        return result
     except Exception as e:
-        print("OpenAI API error:", e)
-        return "Sorry, I couldn't generate a response at the moment."
-    
-
-bot_started = False
+        print(f"OpenAI API error: {e}")
+        print(f"Error type: {type(e)}")
+        # Return a fallback response instead of None
+        return "I'd love to help with your nutrition question! For personalized advice, please make sure your profile is complete. In the meantime, here's a general tip: focus on whole foods like fruits, vegetables, lean proteins, and whole grains for a balanced diet! 🍎"
 
 def ensure_user_profile(user):
     """Make sure user has the complete profile structure"""
@@ -225,26 +258,33 @@ def ensure_user_profile(user):
         user["profile"] = {}
     
     # Ensure all profile fields exist
-    profile_fields = ["age", "height", "weight", "gender", "completed", 
-                     "email", "phone", "country", "bmi", "bmi_category", "daily_calories"]
+    profile_fields = [
+        "age", "height", "weight", "gender", "completed",
+        "email", "phone", "country", "bmi", "bmi_category", 
+        "daily_calories", "current_weight", "target_weight", "goal"
+    ]
+    
     for field in profile_fields:
         if field not in user["profile"]:
             if field == "completed":
                 user["profile"][field] = False
             elif field in ["bmi", "daily_calories"]:
                 user["profile"][field] = None
-            elif field in ["age", "height", "weight"]:
+            elif field in ["age", "height", "weight", "current_weight", "target_weight"]:
                 user["profile"][field] = None
             else:
                 user["profile"][field] = ""
     
     return user
+bot_started = False
+
 def chatbot_reply(user_message):
-    # Use session to track if bot started for this user
+    print(f"\n=== CHATBOT DEBUG ===")
+    print(f"Message: '{user_message}'")
+    
+    # Initialize bot_started if not set
     if 'bot_started' not in session:
         session['bot_started'] = False
-    
-    userInputHistory.append(user_message)
     
     # Check if user has completed profile
     user_name = session.get("user_name")
@@ -254,25 +294,128 @@ def chatbot_reply(user_message):
         if user and not user["profile"]["completed"]:
             return "Please complete your profile setup first from the main menu! 🎯"
     
-    # Welcome (only show if profile is complete and first message)
+    # Show welcome message only ONCE when bot first starts
     if not session['bot_started']:
         session['bot_started'] = True
         return "👋 Welcome to NutriBot! I can see your profile is set up. Ask me anything about nutrition, diet, or healthy living! 🍎"
     
-    tokens = simple_tokenize(user_message)
-
-    # Greetings
-    if any(greet in tokens for greet in ["hello", "hi", "hey"]):
+    user_message_lower = user_message.lower()
+    
+    # Quick responses for common queries
+    if user_message_lower in ["hello", "hi", "hey"]:
         return "Hello! I'm NutriBot, your nutrition assistant! Ask me about food, diet, exercise, or healthy living. 🍎"
     
-    # Goodbye
-    if any(bye in tokens for bye in ["bye", "goodbye", "end", "quit"]):
+    if user_message_lower in ["bye", "goodbye", "quit"]:
+        session['bot_started'] = False  # Reset for next time
         return "Bye! Stay healthy! 🥦"
     
-    # Fallback to GPT
-    return generate_gpt_reply(user_message)
-
-# Bmi Funtions
+    # ====== SMARTER WEIGHT GOAL DETECTION ======
+    # Check for QUESTION words that indicate asking for advice, not stating a goal
+    question_words = ["should", "could", "would", "what", "how", "when", "where", "why", "can", "which"]
+    
+    # Check if message is a QUESTION about weight loss/gain (should go to GPT)
+    is_question = any(word in user_message_lower for word in question_words)
+    
+    # Check for weight-related keywords
+    has_weight_loss_keywords = any(phrase in user_message_lower for phrase in 
+                                  ["lose weight", "weight loss", "slim down", "get thinner"])
+    
+    has_weight_gain_keywords = any(phrase in user_message_lower for phrase in 
+                                  ["gain weight", "weight gain", "bulk up", "get bigger", "put on weight"])
+    
+    # Check for INTENT phrases (user stating their goal)
+    intent_phrases = ["i want to", "i need to", "i would like to", "i'm trying to", 
+                      "help me", "i want", "i need", "i'd like to"]
+    has_intent = any(phrase in user_message_lower for phrase in intent_phrases)
+    
+    # ====== LOGIC DECISION ======
+    # If it's a QUESTION about weight (e.g., "what food should I eat to lose weight")
+    if is_question and (has_weight_loss_keywords or has_weight_gain_keywords):
+        print("DEBUG: Question about weight - sending to GPT")
+        # Send to GPT for nutrition advice
+        return generate_gpt_reply(user_message)
+    
+    # If user is stating INTENT to lose/gain weight (e.g., "I want to lose weight")
+    elif has_intent and has_weight_loss_keywords:
+        session['setting_weight_goal'] = 'lose'
+        session['awaiting_response'] = True
+        return "I see you want to lose weight! Would you like me to start a weight loss program to track your progress? (yes/no)"
+    
+    elif has_intent and has_weight_gain_keywords:
+        session['setting_weight_goal'] = 'gain'
+        session['awaiting_response'] = True
+        return "I see you want to gain weight! Would you like me to start a weight gain program to track your progress? (yes/no)"
+    
+    # Simple statements without question words (e.g., "lose weight")
+    elif has_weight_loss_keywords and not is_question:
+        session['setting_weight_goal'] = 'lose'
+        session['awaiting_response'] = True
+        return "I see you're interested in losing weight! Would you like me to start a weight loss program? (yes/no)"
+    
+    elif has_weight_gain_keywords and not is_question:
+        session['setting_weight_goal'] = 'gain'
+        session['awaiting_response'] = True
+        return "I see you're interested in gaining weight! Would you like me to start a weight gain program? (yes/no)"
+    
+    # Handle yes/no responses for weight program
+    if 'awaiting_response' in session and session['awaiting_response']:
+        if "yes" in user_message_lower:
+            goal = session.get('setting_weight_goal', 'maintain')
+            session['awaiting_response'] = False
+            session['awaiting_target'] = True
+            
+            user_name = session.get("user_name")
+            if user_name:
+                db = load_db()
+                user = get_user(db, user_name)
+                current_weight = user["profile"]["weight"]
+                return f"Great! Let's set up your weight {goal} program. Your current weight is {current_weight} kg. What's your target weight (in kg)?"
+        
+        elif "no" in user_message_lower:
+            session.pop('awaiting_response', None)
+            session.pop('setting_weight_goal', None)
+            return "No problem! What else can I help you with?"
+    
+    # Handle target weight input
+    if 'awaiting_target' in session and session['awaiting_target']:
+        import re
+        match = re.search(r'\d+(\.\d+)?', user_message)
+        if match:
+            target_weight = float(match.group())
+            goal = session.get('setting_weight_goal', 'maintain')
+            
+            user_name = session.get("user_name")
+            if user_name:
+                db = load_db()
+                user = get_user(db, user_name)
+                current_weight = user["profile"]["weight"]
+                
+                # Validate target weight
+                if goal == 'lose' and target_weight >= current_weight:
+                    return f"For weight loss, your target should be lower than your current weight ({current_weight} kg). Please enter a lower target."
+                elif goal == 'gain' and target_weight <= current_weight:
+                    return f"For weight gain, your target should be higher than your current weight ({current_weight} kg). Please enter a higher target."
+                
+                user["profile"]["target_weight"] = target_weight
+                user["profile"]["goal"] = goal
+                save_db(db)
+                
+                session.pop('awaiting_target', None)
+                session.pop('setting_weight_goal', None)
+                
+                return f"🎯 Perfect! Target weight set to {target_weight} kg. Check your Weight Journey page to track your progress weekly!"
+    
+    # Fallback to GPT for everything else
+    print("DEBUG: No specific match - falling back to GPT")
+    try:
+        response = generate_gpt_reply(user_message)
+        if response is None:
+            return "I'm here to help with nutrition questions! What would you like to know?"
+        return response
+    except Exception as e:
+        print(f"GPT Error: {e}")
+        return "I can help with nutrition advice! Try asking about food, diet, or healthy living."
+    
 def calculate_bmi(weight, height):
     """Calculate BMI safely. Height in cm, weight in kg."""
     try:
@@ -390,6 +533,7 @@ def profile_setup():
     
     db = load_db()
     user = get_user(db, user_name)
+    user = ensure_user_profile(user)
     
     if request.method == "POST":
         # Get form data
@@ -403,6 +547,7 @@ def profile_setup():
             user["profile"]["age"] = int(age)
             user["profile"]["height"] = int(height)
             user["profile"]["weight"] = int(weight)
+            user["profile"]["current_weight"] = int(weight)  # Set both weight fields
             user["profile"]["gender"] = gender
             
             # Calculate BMI
@@ -451,11 +596,29 @@ def menu():
     # Check if profile is complete
     db = load_db()
     user = get_user(db, user_name)
-    if user and not user["profile"]["completed"]:
+    
+    if not user:
+        flash("User not found. Please log in again.")
+        return redirect(url_for("login"))
+    
+    # Ensure user has the complete profile structure
+    user = ensure_user_profile(user)
+    
+    # Check if profile is completed
+    if not user["profile"]["completed"]:
         return redirect(url_for("profile_setup"))
-
+    
+    # DON'T reset bot_started here! Let the chatbot manage its own state
+    # Only clear weight-related session variables
+    session.pop('setting_weight_goal', None)
+    session.pop('awaiting_response', None)
+    session.pop('awaiting_target', None)
+    
+    # Update the database with the ensured profile structure
+    db["users"][user_name] = user
+    save_db(db)
+    
     return render_template("menu.html", user_name=user_name)
-
 # ================================
 # GROCERIES
 # ================================
@@ -646,6 +809,336 @@ def logout():
 @app.route("/", methods=["GET"])
 def index():
     return render_template("login.html")
+
+# Add these routes to server.py
+
+@app.route("/weight-journey", methods=["GET"])
+def weight_journey():
+    """Show weight tracking dashboard"""
+    user_name = require_login()
+    if not user_name:
+        return redirect(url_for("login"))
+    
+    db = load_db()
+    user = get_user(db, user_name)
+    user = ensure_user_profile(user)
+    
+    # Prepare data for chart
+    weight_history = user.get("weight_history", [])
+    
+    # Get last 10 entries for display
+    recent_entries = weight_history[-10:] if len(weight_history) > 10 else weight_history
+    
+    # Get user's goal
+    goal = user["profile"].get("goal", "maintain")
+    
+    # Calculate changes with rounding and goal-based color coding
+    for i in range(1, len(recent_entries)):
+        change = recent_entries[i]["weight"] - recent_entries[i-1]["weight"]
+        
+        # Round to 1 decimal place
+        recent_entries[i]["change"] = round(change, 1)
+        
+        # Determine if change is good or bad based on goal
+        if goal == "lose":
+            # For weight loss: negative change is good (losing weight)
+            recent_entries[i]["change_is_good"] = change < 0
+        elif goal == "gain":
+            # For weight gain: positive change is good (gaining weight)
+            recent_entries[i]["change_is_good"] = change > 0
+        else:
+            # For maintenance: small changes are good
+            recent_entries[i]["change_is_good"] = abs(change) < 0.5
+    
+    # Prepare chart data
+    chart_dates = [entry["date"] for entry in weight_history[-30:]]
+    chart_weights = [entry["weight"] for entry in weight_history[-30:]]
+    
+    # Calculate progress - handle None values
+    current_weight = user["profile"]["weight"]
+    target_weight = user["profile"].get("target_weight")
+    
+    # Handle None values
+    if current_weight is None:
+        current_weight = 0
+    
+    if target_weight is None:
+        target_weight = current_weight  # Default to current weight if no target
+    
+    weight_to_go = round(target_weight - current_weight, 1)
+    
+    # Convert to JSON strings
+    chart_dates_json = json.dumps(chart_dates)
+    chart_weights_json = json.dumps(chart_weights)
+    
+    return render_template("weight_log.html",
+                         user_name=user_name,
+                         current_weight=current_weight,
+                         target_weight=target_weight,
+                         weight_to_go=weight_to_go,
+                         recent_entries=recent_entries,
+                         chart_dates_json=chart_dates_json,
+                         chart_weights_json=chart_weights_json,
+                         milestones=user.get("milestones", []),
+                         chat_response=session.pop('weight_chat_response', None),
+                         user=user,
+                         goal=goal)  # Pass goal to template
+    
+@app.route("/log-weight", methods=["POST"])
+def log_weight():
+    """Log a new weight entry"""
+    user_name = require_login()
+    if not user_name:
+        return redirect(url_for("login"))
+    
+    weight = float(request.form.get("weight"))
+    notes = request.form.get("notes", "")
+    
+    db = load_db()
+    user = get_user(db, user_name)
+    
+    # Create weight entry
+    entry = {
+        "id": str(uuid4()),
+        "date": format_time(),
+        "weight": weight,
+        "notes": notes,
+        "bmi": calculate_bmi(weight, user["profile"]["height"])
+    }
+    
+    # Add to history
+    if "weight_history" not in user:
+        user["weight_history"] = []
+    user["weight_history"].append(entry)
+    
+    # Update BOTH weight fields in profile
+    user["profile"]["weight"] = weight
+    user["profile"]["current_weight"] = weight  # Update this too!
+    user["profile"]["bmi"] = entry["bmi"]
+    
+    # Recalculate BMI category
+    if entry["bmi"]:
+        if entry["bmi"] < 18.5:
+            user["profile"]["bmi_category"] = "Underweight"
+        elif entry["bmi"] < 25:
+            user["profile"]["bmi_category"] = "Normal"
+        elif entry["bmi"] < 30:
+            user["profile"]["bmi_category"] = "Overweight"
+        else:
+            user["profile"]["bmi_category"] = "Obese"
+    
+    # Check for milestones
+    check_milestones(user)
+    
+    save_db(db)
+    flash(f"Weight logged: {weight} kg ✅")
+    return redirect(url_for("weight_journey"))
+
+@app.route("/weight-chat", methods=["POST"])
+def weight_chat():
+    """Special chatbot for weight journey conversations"""
+    user_name = require_login()
+    if not user_name:
+        return redirect(url_for("login"))
+    
+    message = request.form.get("message", "").strip()
+    
+    if not message:
+        flash("Please enter a message.")
+        return redirect(url_for("weight_journey"))
+    
+    db = load_db()
+    user = get_user(db, user_name)
+    
+    # Get weight history for context
+    weight_history = user.get("weight_history", [])
+    
+    if len(weight_history) < 1:
+        response = "I need more weight data to analyze your progress. Please log your weight first!"
+    else:
+        # Analyze progress
+        first_weight = weight_history[0]["weight"]
+        last_weight = weight_history[-1]["weight"]
+        total_change = last_weight - first_weight
+        
+        # Calculate weekly rate (rough estimate)
+        if len(weight_history) >= 2:
+            days_between = min(len(weight_history), 7)  # Rough estimate
+            weekly_rate = total_change / (days_between / 7) if days_between > 0 else 0
+        else:
+            weekly_rate = 0
+        
+        # Get user's goal
+        goal = user["profile"].get("goal", "maintain")
+        
+        # Generate personalized response based on keywords
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["how am i", "how i doing", "progress", "doing"]):
+            if len(weight_history) < 2:
+                response = f"You've logged your first weight: {last_weight} kg. Keep logging to see your progress! 📊"
+            elif goal == "lose" and total_change < 0:
+                response = f"Great progress! You've lost {abs(total_change):.1f} kg. That's about {abs(weekly_rate):.1f} kg per week. Keep it up! 💪"
+            elif goal == "gain" and total_change > 0:
+                response = f"Excellent! You've gained {total_change:.1f} kg. That's about {weekly_rate:.1f} kg per week. Well done! 🎉"
+            elif abs(total_change) < 0.5:
+                response = f"You're maintaining well at around {last_weight} kg. Consistency is key! 🎯"
+            else:
+                direction = "gained" if total_change > 0 else "lost"
+                response = f"You've {direction} {abs(total_change):.1f} kg. Keep tracking to see your trend!"
+        
+        elif any(word in message_lower for word in ["motivat", "encourage", "inspire", "stuck"]):
+            motivational_quotes = [
+                "Every small step counts! Remember why you started. 🏃‍♂️",
+                f"You've already logged {len(weight_history)} weights! Consistency is key! 📊",
+                "Think of how far you've come, not just how far you have to go! 🌟",
+                "Your future self will thank you for not giving up today! 💫",
+                "Progress is progress, no matter how small! Celebrate every victory! 🎉",
+                "The only bad workout is the one that didn't happen. Keep going! 💪"
+            ]
+            response = random.choice(motivational_quotes)
+        
+        elif any(word in message_lower for word in ["bmi", "body mass", "healthy weight"]):
+            bmi = user["profile"].get("bmi")
+            bmi_category = user["profile"].get("bmi_category", "Not calculated")
+            if bmi:
+                response = f"Your current BMI is {bmi} ({bmi_category}). "
+                if bmi_category == "Normal":
+                    response += "That's in the healthy range! Keep maintaining! 🎯"
+                elif bmi_category == "Overweight":
+                    response += "Focus on gradual, sustainable changes. You can do it! 💪"
+                elif bmi_category == "Underweight":
+                    response += "Make sure you're eating enough nutrient-dense foods! 🍎"
+                else:
+                    response += "Keep tracking your progress with your healthcare provider."
+            else:
+                response = "BMI not calculated yet. Please update your health information first."
+        
+        elif any(word in message_lower for word in ["calories", "calorie", "eat", "diet"]):
+            calories = user["profile"].get("daily_calories")
+            if calories:
+                response = f"Your estimated daily calorie needs are {int(calories)} kcal. "
+                goal = user["profile"].get("goal", "maintain")
+                if goal == "lose":
+                    response += "For weight loss, aim for 300-500 kcal less per day. 🍽️"
+                elif goal == "gain":
+                    response += "For weight gain, aim for 300-500 kcal more per day. 🥗"
+                else:
+                    response += "For maintenance, stick around this calorie target. ⚖️"
+            else:
+                response = "Calorie needs not calculated yet. Please update your health information."
+        
+        else:
+            # Fallback to regular GPT with weight context
+            weight_context = f"""
+USER'S WEIGHT JOURNEY:
+- Starting weight: {first_weight} kg
+- Current weight: {last_weight} kg
+- Total change: {total_change:+.1f} kg
+- Goal: {goal} weight
+- Entries logged: {len(weight_history)}
+- BMI: {user['profile'].get('bmi', 'Not calculated')}
+- BMI Category: {user['profile'].get('bmi_category', 'Not calculated')}
+- Daily Calories: {user['profile'].get('daily_calories', 'Not calculated')} kcal
+"""
+            
+            # Create enhanced prompt
+            prompt = f"""You are NutriBot, a friendly nutrition and health coach.
+
+{weight_context}
+
+USER MESSAGE: "{message}"
+
+Respond specifically about their weight journey, progress, and nutrition. 
+Be encouraging, evidence-based, and personalized to their data.
+If they're asking about progress, reference their specific numbers.
+Keep responses concise and motivating.
+
+Your response:"""
+            
+            try:
+                gpt_response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=150,
+                    temperature=0.7
+                )
+                response = gpt_response.choices[0].message.content.strip()
+            except Exception as e:
+                print("GPT error:", e)
+                response = "I understand you're asking about your progress. Based on your data, keep up the good work with consistent tracking!"
+    
+    # Store in chat history
+    if "chat_history" not in user:
+        user["chat_history"] = []
+    user["chat_history"].append({
+        "date": format_time(),
+        "user": message,
+        "bot": response
+    })
+    
+    save_db(db)
+    
+    # Store response in session to display on the page
+    session["weight_chat_response"] = response
+    return redirect(url_for("weight_journey"))
+def check_milestones(user):
+    """Check and unlock achievements"""
+    weight_history = user.get("weight_history", [])
+    milestones = user.get("milestones", [])
+    
+    # Milestone 1: First log
+    if len(weight_history) == 1 and not any(m["id"] == "first_log" for m in milestones):
+        milestones.append({
+            "id": "first_log",
+            "title": "First Step",
+            "description": "Logged your first weight",
+            "icon": "flag",
+            "date": format_time()
+        })
+    
+    # Milestone 2: 7-day streak
+    if len(weight_history) >= 7 and not any(m["id"] == "week_streak" for m in milestones):
+        milestones.append({
+            "id": "week_streak",
+            "title": "Weekly Warrior",
+            "description": "7 consecutive days of logging",
+            "icon": "calendar-check",
+            "date": format_time()
+        })
+    
+    # Milestone 3: Reached goal weight
+    current_weight = user["profile"]["weight"]
+    target_weight = user["profile"].get("target_weight")
+    if target_weight and abs(current_weight - target_weight) < 0.5:
+        if not any(m["id"] == "goal_reached" for m in milestones):
+            milestones.append({
+                "id": "goal_reached",
+                "title": "Goal Achieved!",
+                "description": "Reached target weight",
+                "icon": "trophy",
+                "date": format_time()
+            })
+    
+    # Milestone 4: 5kg milestone
+    if len(weight_history) > 1:
+        total_change = weight_history[-1]["weight"] - weight_history[0]["weight"]
+        if abs(total_change) >= 5 and not any(m["id"] == "5kg_change" for m in milestones):
+            direction = "lost" if total_change < 0 else "gained"
+            milestones.append({
+                "id": "5kg_change",
+                "title": f"5kg {direction}!",
+                "description": f"Successfully {direction} 5 kilograms",
+                "icon": "weight-scale",
+                "date": format_time()
+            })
+    
+    user["milestones"] = milestones
+
+def generate_gpt_reply_with_context(message, extra_context):
+    """GPT with weight journey context"""
+    # ... similar to your existing generate_gpt_reply but with extra_context ...
+
 
 if __name__ == "__main__":
     app.run(debug=True)

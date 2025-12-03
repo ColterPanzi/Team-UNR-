@@ -1,0 +1,305 @@
+{
+  "users": {
+    "demo2": {
+      "password": "demo2",
+      "profile": {
+        "current_weight": null,
+        "target_weight": null,
+        "goal": null
+      },
+      "groceries": [],
+      "images": [],
+      "weight_history": [],
+      "goals": {
+        "active_goal": null,
+        "goal_start_date": null,
+        "target_date": null,
+        "weekly_target": null
+      },
+      "milestones": [],
+      "chat_history": []
+    },
+    "demo3": {
+      "password": "demo3",
+      "profile": {
+        "age": 25,
+        "height": 180,
+        "weight": 67.0,
+        "gender": "male",
+        "completed": true,
+        "email": "",
+        "phone": "",
+        "country": "",
+        "bmi": 20.68,
+        "bmi_category": "Normal",
+        "daily_calories": 1655.0,
+        "current_weight": 67.0,
+        "target_weight": null,
+        "goal": null
+      },
+      "groceries": [],
+      "images": [],
+      "weight_history": [
+        {
+          "id": "c5ae883c-c1eb-415f-aae5-bd16a5f69af6",
+          "date": "03/12 18:20",
+          "weight": 66.0,
+          "notes": "",
+          "bmi": 20.37
+        },
+        {
+          "id": "cebd48e5-271c-4dae-9571-27a6cdc8c69e",
+          "date": "03/12 18:20",
+          "weight": 70.0,
+          "notes": "",
+          "bmi": 21.6
+        },
+        {
+          "id": "d009fa84-c5de-4a4d-89cd-21ff02bc6407",
+          "date": "03/12 18:20",
+          "weight": 69.0,
+          "notes": "",
+          "bmi": 21.3
+        },
+        {
+          "id": "26c9feef-291b-421d-a4c6-11834b5274c7",
+          "date": "03/12 18:21",
+          "weight": 65.0,
+          "notes": "",
+          "bmi": 20.06
+        },
+        {
+          "id": "7891f2e2-7b1f-435d-b529-43317685600d",
+          "date": "03/12 18:21",
+          "weight": 65.0,
+          "notes": "",
+          "bmi": 20.06
+        },
+        {
+          "id": "298ed3a7-c579-4a3c-8b55-50629758070c",
+          "date": "03/12 18:21",
+          "weight": 65.0,
+          "notes": "",
+          "bmi": 20.06
+        },
+        {
+          "id": "e48d14fa-772c-4d61-a41a-1ee07b8a02da",
+          "date": "03/12 18:21",
+          "weight": 65.0,
+          "notes": "",
+          "bmi": 20.06
+        },
+        {
+          "id": "3dafa68d-363e-4a6e-8912-28c91219cc59",
+          "date": "03/12 18:31",
+          "weight": 67.0,
+          "notes": "",
+          "bmi": 20.68
+        }
+      ],
+      "goals": {
+        "active_goal": null,
+        "goal_start_date": null,
+        "target_date": null,
+        "weekly_target": null
+      },
+      "milestones": [
+        {
+          "id": "first_log",
+          "title": "First Step",
+          "description": "Logged your first weight",
+          "icon": "flag",
+          "date": "03/12 18:20"
+        },
+        {
+          "id": "week_streak",
+          "title": "Weekly Warrior",
+          "description": "7 consecutive days of logging",
+          "icon": "calendar-check",
+          "date": "03/12 18:21"
+        }
+      ],
+      "chat_history": [
+        {
+          "date": "03/12 18:18",
+          "user": "i want to gain weight",
+          "bot": "I need more weight data to analyze your progress. Please log your weight a few more times!"
+        },
+        {
+          "date": "03/12 18:18",
+          "user": "",
+          "bot": "I need more weight data to analyze your progress. Please log your weight a few more times!"
+        },
+        {
+          "date": "03/12 18:18",
+          "user": "",
+          "bot": "I need more weight data to analyze your progress. Please log your weight a few more times!"
+        },
+        {
+          "date": "03/12 18:18",
+          "user": "how am i doing",
+          "bot": "I need more weight data to analyze your progress. Please log your weight a few more times!"
+        },
+        {
+          "date": "03/12 18:19",
+          "user": "How am i doing?",
+          "bot": "I need more weight data to analyze your progress. Please log your weight a few more times!"
+        },
+        {
+          "date": "03/12 18:19",
+          "user": "",
+          "bot": "I need more weight data to analyze your progress. Please log your weight a few more times!"
+        },
+        {
+          "date": "03/12 18:25",
+          "user": "How am i doing?",
+          "bot": "You've lost 1.0 kg. Keep tracking to see your trend!"
+        }
+      ]
+    },
+    "demo": {
+      "password": "demo1",
+      "profile": {
+        "age": 25,
+        "height": 180,
+        "weight": 80.0,
+        "gender": "male",
+        "completed": true,
+        "email": "",
+        "phone": "",
+        "country": "",
+        "bmi": 24.69,
+        "bmi_category": "Normal",
+        "daily_calories": 1655.0,
+        "current_weight": 80.0,
+        "target_weight": 150.0,
+        "goal": "gain"
+      },
+      "groceries": [],
+      "images": [],
+      "weight_history": [
+        {
+          "id": "f9b30927-d61b-4aa6-ab1d-f305eb80150b",
+          "date": "03/12 18:49",
+          "weight": 66.0,
+          "notes": "",
+          "bmi": 20.37
+        },
+        {
+          "id": "4eda52a1-7ec0-4c45-81ed-6723706b94dc",
+          "date": "03/12 18:49",
+          "weight": 66.1,
+          "notes": "",
+          "bmi": 20.4
+        },
+        {
+          "id": "9ac1cf7c-8eed-4033-b6e1-e4b505090751",
+          "date": "03/12 18:49",
+          "weight": 67.0,
+          "notes": "",
+          "bmi": 20.68
+        },
+        {
+          "id": "36357976-ade4-49dc-b872-52fc941c5137",
+          "date": "03/12 18:49",
+          "weight": 66.5,
+          "notes": "",
+          "bmi": 20.52
+        },
+        {
+          "id": "fe8e22a6-cfcf-4963-a60d-0944848ef4dd",
+          "date": "03/12 18:49",
+          "weight": 68.0,
+          "notes": "",
+          "bmi": 20.99
+        },
+        {
+          "id": "77928b96-df67-476a-bf01-26c893a896c3",
+          "date": "03/12 18:50",
+          "weight": 69.0,
+          "notes": "",
+          "bmi": 21.3
+        },
+        {
+          "id": "080d5516-c6a0-440e-90a5-373592c19e1a",
+          "date": "03/12 18:50",
+          "weight": 70.0,
+          "notes": "",
+          "bmi": 21.6
+        },
+        {
+          "id": "a5285f78-8f7f-48a9-91a8-f337c90ea7fe",
+          "date": "03/12 19:17",
+          "weight": 71.0,
+          "notes": "",
+          "bmi": 21.91
+        },
+        {
+          "id": "3f71ae64-b0d0-471c-894b-7df42ed092c1",
+          "date": "03/12 19:17",
+          "weight": 72.0,
+          "notes": "",
+          "bmi": 22.22
+        },
+        {
+          "id": "75a37368-0215-4f79-b6d5-7c6c62a08149",
+          "date": "03/12 19:17",
+          "weight": 71.0,
+          "notes": "",
+          "bmi": 21.91
+        },
+        {
+          "id": "251ad61c-1c2b-48f1-8d6e-f07ce5bf2380",
+          "date": "03/12 19:18",
+          "weight": 72.5,
+          "notes": "",
+          "bmi": 22.38
+        },
+        {
+          "id": "93638b41-2615-44b6-9cee-67932e2eff1e",
+          "date": "03/12 19:18",
+          "weight": 80.0,
+          "notes": "",
+          "bmi": 24.69
+        }
+      ],
+      "goals": {
+        "active_goal": "gain",
+        "goal_start_date": "03/12 18:46",
+        "target_date": null,
+        "weekly_target": 0.62
+      },
+      "milestones": [
+        {
+          "id": "first_log",
+          "title": "First Step",
+          "description": "Logged your first weight",
+          "icon": "flag",
+          "date": "03/12 18:49"
+        },
+        {
+          "id": "week_streak",
+          "title": "Weekly Warrior",
+          "description": "7 consecutive days of logging",
+          "icon": "calendar-check",
+          "date": "03/12 18:50"
+        },
+        {
+          "id": "goal_reached",
+          "title": "Goal Achieved!",
+          "description": "Reached target weight",
+          "icon": "trophy",
+          "date": "03/12 18:50"
+        },
+        {
+          "id": "5kg_change",
+          "title": "5kg gained!",
+          "description": "Successfully gained 5 kilograms",
+          "icon": "weight-scale",
+          "date": "03/12 19:17"
+        }
+      ],
+      "chat_history": []
+    }
+  }
+}
