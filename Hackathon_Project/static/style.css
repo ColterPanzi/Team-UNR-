@@ -26,43 +26,6 @@
     background-color: #f1f0f0;
 }
 
-.main-card{
-    padding: 2rem 1.5rem 2rem 1.5rem !important;
-    max-width: fit-content;
-    text-align: center;
-    min-width: 30vw;
-    display: flex;
-
-    background: rgba(108, 108, 108, 0.21);
-    border-radius: 3rem;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid rgba(108, 108, 108, 0.29);
-    
-    .btn{
-        border-radius: 2rem;
-    }
-
-    input{
-        border-radius: 2rem;
-    }
-
-    .btn-primary{
-        background: linear-gradient(90deg,rgba(13, 110, 253, 1) 0%, rgba(83, 181, 237, 1) 100%);
-        &:hover{
-            background: linear-gradient(90deg,rgba(3, 100, 243, 1) 0%, rgba(73, 171, 227, 1) 100%);
-        }
-    }
-
-    .btn-outline-success:hover{
-        background: linear-gradient(90deg,rgba(25, 135, 84, 1) 0%, rgba(83, 237, 101, 1) 100%);
-    }
-    
-    .btn-outline-danger:hover{
-        background: linear-gradient(90deg,rgba(220, 53, 69, 1) 0%, rgba(237, 119, 83, 1) 100%);
-    }
-}
-
 @media (min-width: 600px) {
     body{
         padding: 3rem;

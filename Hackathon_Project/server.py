@@ -60,15 +60,17 @@ def create_user(db, user_name, password):
             "weight": None,
             "gender": None,
             "completed": False,
-            # Add new optional fields
             "email": "",
             "phone": "",
-            "country": ""
+            "country": "",
+            "bmi": None,  # Add this line
+            "bmi_category": None  # Add this line (optional)
         },
         "groceries": [],
         "images": []
     }
     return True
+
 def require_login():
     user_name = session.get("user_name")
     if not user_name:
@@ -223,16 +225,20 @@ def ensure_user_profile(user):
         user["profile"] = {}
     
     # Ensure all profile fields exist
-    profile_fields = ["age", "height", "weight", "gender", "completed", "email", "phone", "country", "bmi", "daily_calories"]
+    profile_fields = ["age", "height", "weight", "gender", "completed", 
+                     "email", "phone", "country", "bmi", "bmi_category", "daily_calories"]
     for field in profile_fields:
         if field not in user["profile"]:
             if field == "completed":
                 user["profile"][field] = False
+            elif field in ["bmi", "daily_calories"]:
+                user["profile"][field] = None
+            elif field in ["age", "height", "weight"]:
+                user["profile"][field] = None
             else:
-                user["profile"][field] = None if field in ["age", "height", "weight"] else ""
+                user["profile"][field] = ""
     
     return user
-
 def chatbot_reply(user_message):
     # Use session to track if bot started for this user
     if 'bot_started' not in session:
@@ -304,19 +310,77 @@ def profile():
 
     db = load_db()
     user = get_user(db, user_name)
-    user = ensure_user_profile(user)  # Add this line
+    user = ensure_user_profile(user)
     
     if request.method == "POST":
-        # Update profile information
+        # Update only editable profile information
         user["profile"]["email"] = request.form.get("email", "")
         user["profile"]["phone"] = request.form.get("phone", "")
         user["profile"]["country"] = request.form.get("country", "")
+        
+        # BMI is NOT updated here - it stays as calculated
         
         save_db(db)
         flash("Profile updated successfully! ✅")
         return redirect(url_for("profile"))
     
     return render_template("profile.html", user=user, user_name=user_name)
+
+@app.route("/edit-health", methods=["GET", "POST"])
+def edit_health():
+    user_name = require_login()
+    if not user_name:
+        return redirect(url_for("login"))
+
+    db = load_db()
+    user = get_user(db, user_name)
+    user = ensure_user_profile(user)
+    
+    if request.method == "POST":
+        # Get form data
+        age = request.form.get("age")
+        height = request.form.get("height") 
+        weight = request.form.get("weight")
+        gender = request.form.get("gender")
+        
+        # Validate and save
+        if age and height and weight and gender:
+            # Update basic info
+            user["profile"]["age"] = int(age)
+            user["profile"]["height"] = int(height)
+            user["profile"]["weight"] = int(weight)
+            user["profile"]["gender"] = gender
+            
+            # Recalculate BMI
+            bmi_value = calculate_bmi(weight, height)
+            user["profile"]["bmi"] = bmi_value
+            
+            # Update BMI category
+            if bmi_value:
+                if bmi_value < 18.5:
+                    user["profile"]["bmi_category"] = "Underweight"
+                elif bmi_value < 25:
+                    user["profile"]["bmi_category"] = "Normal"
+                elif bmi_value < 30:
+                    user["profile"]["bmi_category"] = "Overweight"
+                else:
+                    user["profile"]["bmi_category"] = "Obese"
+            else:
+                user["profile"]["bmi_category"] = None
+            
+            # Recalculate daily calories
+            daily_calories = calculate_daily_calories(weight, height, age, gender)
+            user["profile"]["daily_calories"] = daily_calories
+            
+            save_db(db)
+            flash("Health information updated successfully! ✅")
+            flash(f"Your new BMI is {bmi_value} ({user['profile']['bmi_category']})")
+            flash(f"Daily calorie needs: {daily_calories:.0f} kcal")
+            return redirect(url_for("profile"))
+        else:
+            flash("Please fill in all fields.")
+    
+    return render_template("edit_health.html", user=user, user_name=user_name)
 
 @app.route("/profile-setup", methods=["GET", "POST"])
 def profile_setup():
@@ -340,16 +404,32 @@ def profile_setup():
             user["profile"]["height"] = int(height)
             user["profile"]["weight"] = int(weight)
             user["profile"]["gender"] = gender
-            # Calculate BMI 
+            
+            # Calculate BMI
             bmi_value = calculate_bmi(weight, height)
             user["profile"]["bmi"] = bmi_value
-            user["profile"]["completed"] = True
-            # Calculate daily calories 
+            
+            # Set BMI category
+            if bmi_value:
+                if bmi_value < 18.5:
+                    user["profile"]["bmi_category"] = "Underweight"
+                elif bmi_value < 25:
+                    user["profile"]["bmi_category"] = "Normal"
+                elif bmi_value < 30:
+                    user["profile"]["bmi_category"] = "Overweight"
+                else:
+                    user["profile"]["bmi_category"] = "Obese"
+            
+            # Calculate daily calories
             daily_calories = calculate_daily_calories(weight, height, age, gender)
             user["profile"]["daily_calories"] = daily_calories
             
+            user["profile"]["completed"] = True
+            
             save_db(db)
             flash("Profile setup complete! Welcome to NutriBot! 🎉")
+            flash(f"Your BMI is {bmi_value} ({user['profile']['bmi_category']})")
+            flash(f"Estimated daily calorie needs: {daily_calories:.0f} kcal")
             return redirect(url_for("menu"))
         else:
             flash("Please fill in all fields.")
