@@ -450,7 +450,7 @@ def edit_health():
             # Update basic info
             user["profile"]["age"] = int(age)
             user["profile"]["height"] = int(height)
-            user["profile"]["weight"] = int(weight)
+            user["profile"]["weight"] = float(weight)
             user["profile"]["gender"] = gender
             
             # Recalculate BMI
@@ -505,8 +505,8 @@ def profile_setup():
         if age and height and weight and gender:
             user["profile"]["age"] = int(age)
             user["profile"]["height"] = int(height)
-            user["profile"]["weight"] = int(weight)
-            user["profile"]["current_weight"] = int(weight)  # Set both weight fields
+            user["profile"]["weight"] = float(weight)
+            user["profile"]["current_weight"] = float(weight)  # Set both weight fields
             user["profile"]["gender"] = gender
             
             # Calculate BMI
