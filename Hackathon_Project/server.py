@@ -1,3 +1,4 @@
+# Import Libraries
 import random
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
 import re
@@ -14,8 +15,6 @@ from openai import OpenAI
 # =========================
 # Setup
 # =========================
-
-#openai.api_key = os.getenv("OPENAI_API_KEY")
 
 nltk.download("stopwords")
 
@@ -34,31 +33,29 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # =========================
 # JSON DB functions
 # =========================
+# Loading Database
 def load_db():
     if not os.path.exists(DB_FILE):
         return {"users": {}}
     with open(DB_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
-
+# Save Database to Json
 def save_db(db):
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(db, f, indent=2)
-
-
+# Return user if exist
 def get_user(db, user_name):
     return db.get("users", {}).get(user_name)
-
-
+# Create new user
 def create_user(db, user_name, password):
     if "users" not in db:
         db["users"] = {}
     if user_name in db["users"]:
         return False
-
+    # User database 
     db["users"][user_name] = {
         "password": password,
         "profile": {
-            # Essential profile fields
             "age": None,
             "height": None, 
             "weight": None,
@@ -70,7 +67,6 @@ def create_user(db, user_name, password):
             "bmi": None,
             "bmi_category": None,
             "daily_calories": None,
-            
             # New weight tracking fields
             "current_weight": None,
             "target_weight": None,   
@@ -90,19 +86,19 @@ def create_user(db, user_name, password):
         "chat_history": []  # Store motivational conversations
     }
     return True
-
+# Login helper
 def require_login():
     user_name = session.get("user_name")
     if not user_name:
         flash("Please log in first.")
         return None
     return user_name
-
+# Format time to DD/MM HH:MM
 def format_time(dt=None):
     if dt is None:
         dt = datetime.now()
     return dt.strftime("%d/%m %H:%M")
-
+# Image Adding
 def add_image_record(user, image_path, ingredients):
     user["images"].append({
         "id": str(uuid4()),
@@ -110,7 +106,7 @@ def add_image_record(user, image_path, ingredients):
         "detected_items": ingredients,
         "uploaded_at": format_time()
     })
-
+# Grocery Item Adding
 def add_grocery_items(user, ingredients):
     now = format_time()
     for name in ingredients:
@@ -121,7 +117,7 @@ def add_grocery_items(user, ingredients):
             "unit": None,
             "added_at": now
         })
-
+# Validate Uploaded file
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -129,13 +125,13 @@ def allowed_file(filename):
 userInputHistory = []
 userInformationDatabase = {"age": None, "height": None, "weight": None, "gender": None}
 
-# Preprocessing
+# Preprocessing with tokenize
 def simple_tokenize(text):
     tokens = re.findall(r"\b\w+\b", text.lower())
     filtered = [t for t in tokens if t not in set(stopwords.words("english"))]
     return filtered
 
-# Initialize the client once
+# Initialize the client once load env 
 load_dotenv()
 print("Loaded key:", os.getenv("OPENAI_API_KEY"))
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -918,6 +914,6 @@ def check_milestones(user):
     
     user["milestones"] = milestones
 
-
+# Run Main
 if __name__ == "__main__":
     app.run(debug=True)
