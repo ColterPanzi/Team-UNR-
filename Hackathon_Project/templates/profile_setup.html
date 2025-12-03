@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Complete Your Profile - NutriBot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <h2 class="text-center mb-4">Complete Your Profile</h2>
+                        <p class="text-muted text-center mb-4">Help us provide better nutrition advice by sharing some basic information</p>
+                        
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                <div class="alert alert-info">
+                                    {% for msg in messages %}
+                                        <div>{{ msg }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+
+                        <form method="post">
+                            <div class="mb-3">
+                                <label for="age" class="form-label">Age</label>
+                                <input type="number" class="form-control" id="age" name="age" min="1" max="120" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="height" class="form-label">Height (cm)</label>
+                                <input type="number" class="form-control" id="height" name="height" min="50" max="250" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="weight" class="form-label">Weight (kg)</label>
+                                <input type="number" class="form-control" id="weight" name="weight" min="10" max="300" step="0.1" required>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="gender" class="form-label">Gender</label>
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="">Select gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100 btn-lg">Complete Setup</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
