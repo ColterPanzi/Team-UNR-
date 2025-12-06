@@ -1,3 +1,8 @@
+# Run the Files
+# PS C:\Users\colte\OneDrive\Desktop\SIM Y2\Hackathon\Team-UNR-> cd .\Hackathon_Project\
+# PS C:\Users\colte\OneDrive\Desktop\SIM Y2\Hackathon\Team-UNR-\Hackathon_Project> python server.py       
+
+
 # Import Libraries
 import random
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
@@ -379,7 +384,216 @@ def calculate_bmi(weight, height):
         return round(bmi, 2)
     except:
         return None
-    
+
+
+def detect_food_items(image_path: str):
+    try:
+        with open(image_path, "rb") as f:
+            img_bytes = f.read()
+
+        b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                "Look at this image and list the FOOD INGREDIENTS you see. "
+                                "Reply as a simple comma-separated list, e.g.: "
+                                "banana, milk, oats"
+                            ),
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{b64}"
+                            },
+                        },
+                    ],
+                }
+            ],
+            max_tokens=50,
+            temperature=0,
+        )
+
+        raw = response.choices[0].message.content.strip().lower()
+        raw = raw.replace(" and ", ", ")
+        parts = [p.strip() for p in raw.split(",")]
+        ingredients = [p for p in parts if p]
+
+        cleaned = [normalize_ingredient(i) for i in ingredients]
+        deduped = dedupe_keep_order(cleaned)
+        return deduped or ["unknown ingredient"]
+    except Exception as e:
+        print("Vision API error:", e)
+        return ["unknown ingredient"]
+
+def normalize_ingredient(name: str) -> str:
+    name = name.lower().strip()
+    parts = name.split()
+    core = parts[-1] if parts else name
+
+    if core.endswith("s") and not core.endswith("ss"):
+        core = core[:-1]
+        
+    return core
+
+def dedupe_keep_order(items):
+    seen = set()
+    result = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+def extract_mentioned_ingredients(message, pantry_ingredients):
+    message = message.lower()
+    selected = [i for i in pantry_ingredients if i.lower() in message]
+    return selected
+
+def extract_recipe_count(message: str, default=3):
+    message = message.lower()
+    for num in [1,2,3,4,5]:
+        if f"{num} recipe" in message or f"{num} recipes" in message:
+            return num
+    return default
+
+def generate_recipes_for_user(user_message):
+    user_name = session.get("user_name")
+    if not user_name:
+        return "Please log in to request recipes."
+
+    db = load_db()
+    user = get_user(db, user_name)
+
+    pantry = sorted({item["name"] for item in user["groceries"]})
+
+    if not pantry:
+        return "Your pantry is empty. Upload a food image first."
+
+    requested = extract_mentioned_ingredients(user_message, pantry)
+
+    ingredients_to_use = requested if requested else pantry
+
+    if len(requested) > 0 and len(requested) == 1:
+        pass  # ok
+    elif len(requested) >= 2:
+        forbidden = [
+            ("apple", "cabbage"),
+            ("banana", "broccoli")
+        ]
+        for combo in forbidden:
+            if all(i in requested for i in combo):
+                return f"❌ No valid recipes can be formed using: {', '.join(requested)}."
+
+    count = extract_recipe_count(user_message, default=3)
+
+    prompt = f"""
+    You are NutriBot. ALWAYS follow the required format exactly. 
+    Every recipe MUST be separated clearly with blank lines. 
+    DO NOT merge any lines together. DO NOT output inline text blocks.
+
+    ==========================
+    FORMAT RULES (MANDATORY)
+    ==========================
+    For EACH recipe, output EXACTLY this structure with REQUIRED newlines:
+
+    TITLE: <recipe name>
+
+    Ingredients:
+    • ingredient — amount
+    • ingredient — amount
+
+    Steps:
+    1. step text (only add time if heat is used)
+    2. step text
+    3. step text
+
+    Nutrition (per serving):
+    • Calories: <number> kcal
+    • Protein: <number> g
+    • Carbs: <number> g
+    • Fat: <number> g
+
+    ---- END OF RECIPE ----
+
+    IMPORTANT:
+    • Ensure ALL sections appear on separate lines.
+    • Ensure bullets NEVER appear on the same line as a title.
+    • NEVER merge two recipes together.
+    • After each recipe, include EXACTLY the line: "---- END OF RECIPE ----"
+    • This STOP TOKEN forces clean separation.
+
+    ==========================
+    RECIPE GENERATION RULES
+    ==========================
+    1. Generate EXACTLY {count} recipes.
+    2. If the user requests dietary constraints (e.g., "high protein"):
+    → ALL recipes must follow it.
+    3. If the user specifies ingredients:
+    → ALL recipes must include those ingredients.
+    4. Use up to 3 pantry ingredients per recipe.
+    5. If ingredients cannot form valid recipes:
+    → Reply ONLY with this: "No valid recipes can be formed using the ingredients mentioned."
+    6. Do NOT use unrealistic combinations (e.g., apple + cabbage).
+    7. Include cook time ONLY for heat-based steps:
+    • baking, roasting, frying, sautéing
+    • boiling, simmering
+    • microwaving
+    • grilling, air frying
+
+    ==========================
+    PANTRY + REQUEST CONTEXT
+    ==========================
+    PANTRY INGREDIENTS: {", ".join(pantry)}
+    REQUESTED INGREDIENTS: {", ".join(requested) if requested else "None"}
+    USER MESSAGE: "{user_message}"
+
+    Now output {count} recipes in the strict format.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=600,
+            temperature=0.7
+        )
+
+        raw = response.choices[0].message.content.strip()
+        return raw
+    except Exception as e:
+        print("Recipe generation error:", e)
+        return "Sorry, I couldn't generate recipes at this moment."
+
+# Image Adding
+def add_image_record(user, image_path, ingredients):
+    user["images"].append({
+        "id": str(uuid4()),
+        "image_path": image_path,
+        "detected_items": ingredients,
+        "uploaded_at": format_time()
+    })
+# Grocery Item Adding
+def add_grocery_items(user, ingredients):
+    now = format_time()
+    for name in ingredients:
+        user["groceries"].append({
+            "id": str(uuid4()),
+            "name": name,
+            "quantity": None,
+            "unit": None,
+            "added_at": now
+        })
+# Validate Uploaded file
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 # Calculate User Daily calories 
 def calculate_daily_calories(weight, height, age, gender):
     weight = float(weight)
